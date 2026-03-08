@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "TracknBook",
@@ -60,7 +61,8 @@
         "WRITE_EXTERNAL_STORAGE",
         "READ_MEDIA_IMAGES",
         "READ_MEDIA_VIDEO"
-      ]
+      ],
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -95,13 +97,12 @@
       "router": {
         "origin": false
       },
-      "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev",
-      "eas": {
-        "projectId": "your-project-id"
-      }
+      "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev"
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    }
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "enabled": false
+    },
+    "owner": "anonymous"
   }
 }
