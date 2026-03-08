@@ -4,11 +4,11 @@
     "slug": "tracknbook",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/app-icon-ptb.png",
+    "icon": "./assets/images/tempImageDMDAZn.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/tempImageDMDAZn.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -43,14 +43,15 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon-ptb.png",
+        "foregroundImage": "./assets/images/tempImageDMDAZn.png",
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.tracknbook.app",
       "permissions": [
         "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "ACCESS_NETWORK_STATE",
+        "POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -60,7 +61,16 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/app-icon-ptb.png",
+          "color": "#000000",
+          "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": true
+        }
+      ]
     ],
     "scheme": "tracknbook",
     "experiments": {
@@ -68,7 +78,10 @@
     },
     "extra": {
       "router": {},
-      "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev"
+      "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev",
+      "eas": {
+        "projectId": "your-project-id"
+      }
     }
   }
 }
