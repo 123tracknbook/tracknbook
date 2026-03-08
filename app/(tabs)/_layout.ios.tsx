@@ -20,7 +20,7 @@ export default function TabLayout() {
         <Stack.Screen name="(home)" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />
       </Stack>
-      <FloatingTabBar tabs={tabs} />
+      {tabs.length > 0 && <FloatingTabBar tabs={tabs} />}
     </>
   );
 }
