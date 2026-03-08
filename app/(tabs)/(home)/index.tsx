@@ -19,22 +19,34 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     zIndex: 10,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
   },
-  errorText: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    color: 'red',
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
-    zIndex: 11,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorHint: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+    opacity: 0.7,
   },
 });
 
@@ -44,29 +56,32 @@ export default function HomeScreen() {
   const { colors } = useTheme();
 
   const handleLoadEnd = () => {
-    console.log('WebView finished loading');
+    console.log('WebView finished loading TrackNBook');
     setLoading(false);
+    setError(null);
   };
 
   const handleLoadStart = () => {
-    console.log('WebView started loading');
+    console.log('WebView started loading TrackNBook');
     setLoading(true);
     setError(null);
   };
 
   const handleError = (syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
-    const errorMessage = `Failed to load: ${nativeEvent.description || nativeEvent.url || 'Unknown error'}`;
-    console.error('WebView Error:', nativeEvent);
-    setError(errorMessage);
+    console.error('WebView Error:', JSON.stringify(nativeEvent, null, 2));
+    const errorMessage = nativeEvent.description || nativeEvent.code || 'Unknown error';
+    setError(`Failed to load: ${errorMessage}`);
     setLoading(false);
   };
 
   const handleHttpError = (syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
-    const errorMessage = `HTTP Error ${nativeEvent.statusCode}: ${nativeEvent.url}`;
-    console.error('WebView HTTP Error:', nativeEvent);
-    setError(errorMessage);
+    console.error('WebView HTTP Error:', JSON.stringify(nativeEvent, null, 2));
+    const statusCode = nativeEvent.statusCode || 'Unknown';
+    const url = nativeEvent.url || webAppUrl;
+    setError(`HTTP Error ${statusCode} while loading ${url}`);
+    setLoading(false);
   };
 
   const handleShouldStartLoadWithRequest = (request: any) => {
@@ -75,53 +90,68 @@ export default function HomeScreen() {
   };
 
   const loadingTextColor = colors.text;
+  const errorTextColor = colors.text;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
           headerShown: false,
         }}
       />
       
-      <WebView
-        source={{ uri: webAppUrl }}
-        onLoadStart={handleLoadStart}
-        onLoadEnd={handleLoadEnd}
-        onError={handleError}
-        onHttpError={handleHttpError}
-        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-        startInLoadingState={true}
-        originWhitelist={['*']}
-        cacheEnabled={true}
-        thirdPartyCookiesEnabled={true}
-        sharedCookiesEnabled={true}
-        allowFileAccess={true}
-        allowUniversalAccessFromFileURLs={true}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        mediaPlaybackRequiresUserAction={false}
-        allowsInlineMediaPlayback={true}
-        allowsFullscreenVideo={true}
-        allowsBackForwardNavigationGestures={true}
-        allowFileAccessFromFileURLs={true}
-        mixedContentMode="always"
-        geolocationEnabled={true}
-        allowsLinkPreview={true}
-        style={styles.container}
-      />
-
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text style={[styles.loadingText, { color: loadingTextColor }]}>
-            Loading TrackNBook...
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorTitle, { color: errorTextColor }]}>
+            Connection Error
+          </Text>
+          <Text style={[styles.errorText, { color: errorTextColor }]}>
+            {error}
+          </Text>
+          <Text style={[styles.errorHint, { color: errorTextColor }]}>
+            Please check your internet connection and try again.
           </Text>
         </View>
-      )}
+      ) : (
+        <>
+          <WebView
+            source={{ uri: webAppUrl }}
+            onLoadStart={handleLoadStart}
+            onLoadEnd={handleLoadEnd}
+            onError={handleError}
+            onHttpError={handleHttpError}
+            onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+            startInLoadingState={true}
+            originWhitelist={['*']}
+            cacheEnabled={true}
+            cacheMode="LOAD_DEFAULT"
+            thirdPartyCookiesEnabled={true}
+            sharedCookiesEnabled={true}
+            allowFileAccess={true}
+            allowUniversalAccessFromFileURLs={true}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            mediaPlaybackRequiresUserAction={false}
+            allowsInlineMediaPlayback={true}
+            allowsFullscreenVideo={true}
+            allowsBackForwardNavigationGestures={Platform.OS === 'ios'}
+            allowFileAccessFromFileURLs={true}
+            mixedContentMode="always"
+            geolocationEnabled={true}
+            allowsLinkPreview={true}
+            style={styles.container}
+            setSupportMultipleWindows={false}
+          />
 
-      {error && (
-        <Text style={styles.errorText}>{error}</Text>
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: loadingTextColor }]}>
+                Loading TrackNBook...
+              </Text>
+            </View>
+          )}
+        </>
       )}
     </View>
   );

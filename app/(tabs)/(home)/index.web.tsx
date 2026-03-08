@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   iframe: {
     flex: 1,
@@ -32,16 +32,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
   errorText: {
     fontSize: 16,
-    color: '#ff0000',
-    marginBottom: 10,
     textAlign: 'center',
+    marginBottom: 8,
   },
-  errorSubtext: {
+  errorHint: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
+    marginTop: 8,
+    opacity: 0.7,
   },
 });
 
@@ -53,6 +58,7 @@ export default function HomeScreen() {
   const handleLoad = () => {
     console.log('Web app loaded successfully');
     setIsLoading(false);
+    setError(null);
   };
 
   const handleError = () => {
@@ -62,6 +68,8 @@ export default function HomeScreen() {
   };
 
   const errorDisplay = error ? error : '';
+  const loadingTextColor = colors.text;
+  const errorTextColor = colors.text;
 
   return (
     <>
@@ -74,16 +82,24 @@ export default function HomeScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {error ? (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{errorDisplay}</Text>
-            <Text style={styles.errorSubtext}>
-              Please check your internet connection or try again later.
+            <Text style={[styles.errorTitle, { color: errorTextColor }]}>
+              Connection Error
+            </Text>
+            <Text style={[styles.errorText, { color: errorTextColor }]}>
+              {errorDisplay}
+            </Text>
+            <Text style={[styles.errorHint, { color: errorTextColor }]}>
+              Please check your internet connection and try again.
             </Text>
           </View>
         ) : (
           <>
             {isLoading && (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#0000ff" />
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[{ marginTop: 10, fontSize: 16 }, { color: loadingTextColor }]}>
+                  Loading TrackNBook...
+                </Text>
               </View>
             )}
             <iframe

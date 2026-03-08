@@ -6,8 +6,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, Alert } from "react-native";
-import { useNetworkState } from "expo-network";
+import { useColorScheme } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -32,12 +31,11 @@ Notifications.setNotificationHandler({
 });
 
 export const unstable_settings = {
-  initialRouteName: "home",
+  initialRouteName: "(tabs)",
 };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const networkState = useNetworkState();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -47,18 +45,6 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
-
-  React.useEffect(() => {
-    if (
-      !networkState.isConnected &&
-      networkState.isInternetReachable === false
-    ) {
-      Alert.alert(
-        "🔌 You are offline",
-        "You can keep using the app! Your changes will be saved locally and synced when you are back online."
-      );
-    }
-  }, [networkState.isConnected, networkState.isInternetReachable]);
 
   if (!loaded) {
     return null;
@@ -104,7 +90,8 @@ export default function RootLayout() {
               }}
             >
               <Stack.Screen name="index" />
-              <Stack.Screen name="home" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="camera-demo" />
               <Stack.Screen name="notifications-demo" />
               <Stack.Screen name="+not-found" />
             </Stack>

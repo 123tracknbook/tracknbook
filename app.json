@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "TracknBook",
@@ -92,11 +93,16 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false
+      },
       "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev",
       "eas": {
         "projectId": "your-project-id"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
