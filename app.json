@@ -1,6 +1,7 @@
+
 {
   "expo": {
-    "name": "TracknBook",
+    "name": "TrackNBook",
     "slug": "tracknbook",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tracknbook.app",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIViewControllerBasedStatusBarAppearance": true,
@@ -51,6 +53,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.tracknbook.app",
+      "versionCode": 1,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -96,12 +99,16 @@
       "router": {
         "origin": false
       },
-      "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev"
+      "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev",
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
     },
     "runtimeVersion": "1.0.0",
     "updates": {
-      "enabled": false
+      "enabled": false,
+      "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID"
     },
-    "owner": "anonymous"
+    "owner": "YOUR_EXPO_USERNAME"
   }
 }
