@@ -41,14 +41,18 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    console.log('RootLayout mounted, fonts loaded:', loaded);
     if (loaded) {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
 
   if (!loaded) {
+    console.log('Fonts not loaded yet, showing splash screen');
     return null;
   }
+
+  console.log('RootLayout rendering with color scheme:', colorScheme);
 
   const CustomDefaultTheme: Theme = {
     ...DefaultTheme,
@@ -86,13 +90,11 @@ export default function RootLayout() {
             <Stack
               screenOptions={{
                 headerShown: false,
-                contentStyle: { backgroundColor: 'transparent' },
               }}
             >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="camera-demo" />
-              <Stack.Screen name="notifications-demo" />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="camera-demo" options={{ headerShown: true, title: 'Camera Demo' }} />
+              <Stack.Screen name="notifications-demo" options={{ headerShown: true, title: 'Notifications Demo' }} />
               <Stack.Screen name="+not-found" />
             </Stack>
             <SystemBars style="light" />

@@ -51,6 +51,7 @@ const styles = StyleSheet.create({
 });
 
 export default function HomeScreen() {
+  console.log('HomeScreen rendering (iOS)');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
