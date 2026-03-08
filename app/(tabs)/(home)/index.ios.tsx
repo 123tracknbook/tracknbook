@@ -2,7 +2,7 @@
 import { WebView } from "react-native-webview";
 import { Stack } from "expo-router";
 import { useTheme } from "@react-navigation/native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StyleSheet, View, ActivityIndicator, Text } from "react-native";
 
 const webAppUrl = "https://www.tracknbook.app";
@@ -56,6 +56,10 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
 
+  useEffect(() => {
+    console.log('HomeScreen mounted (iOS) - WebView URL:', webAppUrl);
+  }, []);
+
   const handleLoadEnd = () => {
     console.log('WebView finished loading TrackNBook (iOS)');
     setLoading(false);
@@ -92,6 +96,8 @@ export default function HomeScreen() {
 
   const loadingTextColor = colors.text;
   const errorTextColor = colors.text;
+
+  console.log('HomeScreen rendering (iOS) - loading:', loading, 'error:', error);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

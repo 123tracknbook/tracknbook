@@ -1,22 +1,39 @@
 
 import React from 'react';
-import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
+import { Stack } from 'expo-router';
+import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 
 export default function TabLayout() {
+  console.log('TabLayout rendering (iOS)');
+  
+  // Define the tabs configuration with Camera and Notifications
+  const tabs: TabBarItem[] = [
+    {
+      name: 'camera',
+      route: '/camera-demo',
+      icon: 'camera',
+      label: 'Camera',
+    },
+    {
+      name: 'notifications',
+      route: '/notifications-demo',
+      icon: 'notifications',
+      label: 'Notifications',
+    },
+  ];
+
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger key="camera-demo" name="camera-demo">
-        <Icon sf="camera.fill" />
-        <Label>Camera</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger key="notifications-demo" name="notifications-demo">
-        <Icon sf="bell.fill" />
-        <Label>Notifications</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger key="home" name="(home)" hidden>
-        <Icon sf="house.fill" />
-        <Label>Home</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { flex: 1 },
+        }}
+      >
+        <Stack.Screen name="(home)" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
+      </Stack>
+      <FloatingTabBar tabs={tabs} />
+    </>
   );
 }
