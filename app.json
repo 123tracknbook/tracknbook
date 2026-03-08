@@ -1,4 +1,3 @@
-
 {
   "expo": {
     "name": "Lovable App",
@@ -48,7 +47,8 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev"
     }
   }
 }
