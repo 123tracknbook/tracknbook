@@ -6,21 +6,8 @@ import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 export default function TabLayout() {
   console.log('TabLayout rendering');
   
-  // Define the tabs configuration with Camera and Notifications
-  const tabs: TabBarItem[] = [
-    {
-      name: 'camera',
-      route: '/camera-demo',
-      icon: 'camera',
-      label: 'Camera',
-    },
-    {
-      name: 'notifications',
-      route: '/notifications-demo',
-      icon: 'notifications',
-      label: 'Notifications',
-    },
-  ];
+  // Empty tabs array - no camera or notification buttons
+  const tabs: TabBarItem[] = [];
 
   return (
     <>
