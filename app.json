@@ -18,6 +18,7 @@
       "bundleIdentifier": "com.tracknbook.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "UIViewControllerBasedStatusBarAppearance": true,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsArbitraryLoadsForMedia": true,
@@ -51,7 +52,7 @@
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE"
-      ],
+      ]
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
