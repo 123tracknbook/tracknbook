@@ -1,21 +1,22 @@
+
 import React from 'react';
 import { Stack } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 
 export default function TabLayout() {
-  // Define the tabs configuration
+  // Define the tabs configuration with Camera and Notifications
   const tabs: TabBarItem[] = [
     {
-      name: '(home)',
-      route: '/(tabs)/(home)/',
-      icon: 'home',
-      label: 'Home',
+      name: 'camera',
+      route: '/camera-demo',
+      icon: 'camera',
+      label: 'Camera',
     },
     {
-      name: 'profile',
-      route: '/(tabs)/profile',
-      icon: 'person',
-      label: 'Profile',
+      name: 'notifications',
+      route: '/notifications-demo',
+      icon: 'notifications',
+      label: 'Notifications',
     },
   ];
 
