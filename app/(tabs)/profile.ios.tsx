@@ -10,13 +10,12 @@ export default function ProfileScreen() {
 
   const handleOpenWebsite = () => {
     console.log("User tapped Open Website button");
-    // Replace with your Lovable web app URL
-    Linking.openURL("https://your-lovable-app.lovable.app");
+    Linking.openURL("https://www.tracknbook.app");
   };
 
   const handleSupport = () => {
     console.log("User tapped Support button");
-    Linking.openURL("mailto:support@yourapp.com");
+    Linking.openURL("mailto:support@tracknbook.app");
   };
 
   return (

@@ -9,16 +9,15 @@ export default function HomeScreen() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
 
-  // Replace this URL with your Lovable web app URL
-  const webAppUrl = "https://your-lovable-app.lovable.app";
+  const webAppUrl = "https://www.tracknbook.app";
 
   const handleLoadEnd = () => {
-    console.log("WebView finished loading");
+    console.log("WebView finished loading TrackNBook");
     setLoading(false);
   };
 
   const handleLoadStart = () => {
-    console.log("WebView started loading");
+    console.log("WebView started loading TrackNBook");
     setLoading(true);
   };
 
