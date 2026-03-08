@@ -21,6 +21,12 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
   console.log('Registering for push notifications...');
   
+  // Web doesn't support Expo push notifications
+  if (Platform.OS === 'web') {
+    console.warn('Push notifications are not supported on web');
+    return undefined;
+  }
+  
   let token: string | undefined;
 
   // Android requires a notification channel to be created before requesting permissions
@@ -93,6 +99,12 @@ export async function scheduleLocalNotification(
   data?: Record<string, any>,
   triggerSeconds?: number
 ) {
+  // Web doesn't support scheduled notifications
+  if (Platform.OS === 'web') {
+    console.warn('Scheduled notifications are not supported on web');
+    return undefined;
+  }
+  
   console.log('Scheduling local notification:', { title, body, triggerSeconds });
   
   const identifier = await Notifications.scheduleNotificationAsync({
@@ -118,6 +130,11 @@ export async function scheduleLocalNotification(
  * Cancel a scheduled notification
  */
 export async function cancelNotification(identifier: string) {
+  if (Platform.OS === 'web') {
+    console.warn('Cancel notification is not supported on web');
+    return;
+  }
+  
   console.log('Canceling notification:', identifier);
   await Notifications.cancelScheduledNotificationAsync(identifier);
 }
@@ -126,6 +143,11 @@ export async function cancelNotification(identifier: string) {
  * Cancel all scheduled notifications
  */
 export async function cancelAllNotifications() {
+  if (Platform.OS === 'web') {
+    console.warn('Cancel all notifications is not supported on web');
+    return;
+  }
+  
   console.log('Canceling all scheduled notifications');
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
@@ -134,6 +156,11 @@ export async function cancelAllNotifications() {
  * Get all scheduled notifications
  */
 export async function getScheduledNotifications() {
+  if (Platform.OS === 'web') {
+    console.warn('Get scheduled notifications is not supported on web');
+    return [];
+  }
+  
   const notifications = await Notifications.getAllScheduledNotificationsAsync();
   console.log('Scheduled notifications:', notifications.length);
   return notifications;
@@ -143,6 +170,11 @@ export async function getScheduledNotifications() {
  * Dismiss a notification from the notification tray
  */
 export async function dismissNotification(notificationId: string) {
+  if (Platform.OS === 'web') {
+    console.warn('Dismiss notification is not supported on web');
+    return;
+  }
+  
   console.log('Dismissing notification:', notificationId);
   await Notifications.dismissNotificationAsync(notificationId);
 }
@@ -151,6 +183,11 @@ export async function dismissNotification(notificationId: string) {
  * Dismiss all notifications from the notification tray
  */
 export async function dismissAllNotifications() {
+  if (Platform.OS === 'web') {
+    console.warn('Dismiss all notifications is not supported on web');
+    return;
+  }
+  
   console.log('Dismissing all notifications');
   await Notifications.dismissAllNotificationsAsync();
 }
@@ -159,6 +196,11 @@ export async function dismissAllNotifications() {
  * Set the app badge count (the number shown on the app icon)
  */
 export async function setBadgeCount(count: number) {
+  if (Platform.OS === 'web') {
+    console.warn('Badge count is not supported on web');
+    return;
+  }
+  
   console.log('Setting badge count to:', count);
   await Notifications.setBadgeCountAsync(count);
 }
@@ -167,6 +209,11 @@ export async function setBadgeCount(count: number) {
  * Get the current badge count
  */
 export async function getBadgeCount() {
+  if (Platform.OS === 'web') {
+    console.warn('Badge count is not supported on web');
+    return 0;
+  }
+  
   const count = await Notifications.getBadgeCountAsync();
   console.log('Current badge count:', count);
   return count;

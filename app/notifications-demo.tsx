@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTheme } from '@react-navigation/native';
@@ -31,22 +32,28 @@ export default function NotificationsDemoScreen() {
   const [scheduledCount, setScheduledCount] = useState(0);
   const [badgeCount, setBadgeCountState] = useState(0);
 
+  const isWeb = Platform.OS === 'web';
+
   // Update scheduled notifications count
   const updateScheduledCount = async () => {
+    if (isWeb) return;
     const notifications = await getScheduledNotifications();
     setScheduledCount(notifications.length);
   };
 
   // Update badge count
   const updateBadgeCount = async () => {
+    if (isWeb) return;
     const count = await getBadgeCount();
     setBadgeCountState(count);
   };
 
   useEffect(() => {
-    updateScheduledCount();
-    updateBadgeCount();
-  }, []);
+    if (!isWeb) {
+      updateScheduledCount();
+      updateBadgeCount();
+    }
+  }, [isWeb]);
 
   // Handle notification received while app is open
   useEffect(() => {
@@ -66,6 +73,11 @@ export default function NotificationsDemoScreen() {
   }, [notificationResponse]);
 
   const handleScheduleNotification = async () => {
+    if (isWeb) {
+      Alert.alert('Not Supported', 'Push notifications are not supported on web. Please test on iOS or Android.');
+      return;
+    }
+
     const delay = parseInt(delaySeconds, 10);
     if (isNaN(delay) || delay < 0) {
       Alert.alert('Invalid Delay', 'Please enter a valid number of seconds');
@@ -93,6 +105,11 @@ export default function NotificationsDemoScreen() {
   };
 
   const handleCancelAll = async () => {
+    if (isWeb) {
+      Alert.alert('Not Supported', 'Push notifications are not supported on web. Please test on iOS or Android.');
+      return;
+    }
+
     try {
       await cancelAllNotifications();
       Alert.alert('Success', 'All scheduled notifications canceled');
@@ -104,6 +121,11 @@ export default function NotificationsDemoScreen() {
   };
 
   const handleSetBadge = async (count: number) => {
+    if (isWeb) {
+      Alert.alert('Not Supported', 'Badge count is not supported on web. Please test on iOS or Android.');
+      return;
+    }
+
     try {
       await setBadgeCount(count);
       await updateBadgeCount();
@@ -113,9 +135,37 @@ export default function NotificationsDemoScreen() {
     }
   };
 
-  const tokenDisplay = expoPushToken || 'Loading...';
+  const tokenDisplay = expoPushToken || (isWeb ? 'Not supported on web' : 'Loading...');
   const scheduledText = `${scheduledCount} scheduled`;
   const badgeText = `Badge: ${badgeCount}`;
+
+  // Show web warning
+  if (isWeb) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+        <Stack.Screen
+          options={{
+            title: 'Push Notifications Demo',
+            headerShown: true,
+          }}
+        />
+        
+        <View style={styles.webWarningContainer}>
+          <Text style={[styles.webWarningTitle, { color: colors.text }]}>
+            Web Platform Limitation
+          </Text>
+          <Text style={[styles.webWarningText, { color: colors.text }]}>
+            Push notifications are not supported on web browsers.
+            {'\n\n'}
+            To test push notifications, please open this app on:
+            {'\n'}• iOS device or simulator
+            {'\n'}• Android device or emulator
+            {'\n'}• Expo Go app on your phone
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
@@ -320,5 +370,22 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  webWarningContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  webWarningTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  webWarningText: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
   },
 });
