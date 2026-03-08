@@ -1,10 +1,11 @@
+
 {
   "expo": {
-    "name": "Lovable App",
-    "slug": "lovable-app",
+    "name": "TrackNBook",
+    "slug": "tracknbook",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
+    "icon": "./assets/images/app-icon-ptb.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,24 +15,43 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lovable.app",
+      "bundleIdentifier": "com.tracknbook.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsArbitraryLoadsForMedia": true,
+          "NSAllowsArbitraryLoadsInWebContent": true,
+          "NSExceptionDomains": {
+            "tracknbook.app": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSRequiresCertificateTransparency": false
+            },
+            "www.tracknbook.app": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSRequiresCertificateTransparency": false
+            }
+          }
         }
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
+        "foregroundImage": "./assets/images/app-icon-ptb.png",
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.lovable.app",
+      "package": "com.tracknbook.app",
       "permissions": [
-        "INTERNET"
-      ]
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -42,7 +62,7 @@
       "expo-router",
       "expo-web-browser"
     ],
-    "scheme": "lovableapp",
+    "scheme": "tracknbook",
     "experiments": {
       "typedRoutes": true
     },
