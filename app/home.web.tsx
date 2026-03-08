@@ -30,7 +30,7 @@ export default function HomeScreen() {
           headerShown: false,
         }}
       />
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.container}>
         {error ? (
           <View style={styles.errorContainer}>
             <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
@@ -67,13 +67,26 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    position: 'fixed' as any,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100vw' as any,
+    height: '100vh' as any,
+    margin: 0,
+    padding: 0,
+    overflow: 'hidden',
   },
   iframe: {
-    flex: 1,
+    position: 'absolute' as any,
+    top: 0,
+    left: 0,
     width: '100%',
     height: '100%',
     border: 'none',
+    margin: 0,
+    padding: 0,
   } as any,
   loadingContainer: {
     position: 'absolute',

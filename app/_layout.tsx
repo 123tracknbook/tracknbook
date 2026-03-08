@@ -80,7 +80,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="auto" translucent backgroundColor="transparent" />
+      <StatusBar style="light" translucent backgroundColor="transparent" />
       <ThemeProvider
         value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
       >
@@ -96,7 +96,7 @@ export default function RootLayout() {
               <Stack.Screen name="home" />
               <Stack.Screen name="+not-found" />
             </Stack>
-            <SystemBars style="auto" />
+            <SystemBars style="light" />
           </GestureHandlerRootView>
         </WidgetProvider>
       </ThemeProvider>
