@@ -1,70 +1,31 @@
-
 {
   "expo": {
-    "name": "TrackNBook",
-    "slug": "tracknbook",
+    "name": "Natively",
+    "slug": "Natively",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/tempImageDMDAZn.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/tempImageDMDAZn.png",
+      "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tracknbook.app",
-      "buildNumber": "1",
+      "bundleIdentifier": "com.placeholder.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "UIViewControllerBasedStatusBarAppearance": true,
-        "NSCameraUsageDescription": "This app needs access to your camera to take photos.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select photos.",
-        "NSMicrophoneUsageDescription": "This app needs access to your microphone to record videos.",
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true,
-          "NSAllowsArbitraryLoadsForMedia": true,
-          "NSAllowsArbitraryLoadsInWebContent": true,
-          "NSExceptionDomains": {
-            "tracknbook.app": {
-              "NSIncludesSubdomains": true,
-              "NSExceptionAllowsInsecureHTTPLoads": false,
-              "NSExceptionRequiresForwardSecrecy": false,
-              "NSExceptionMinimumTLSVersion": "TLSv1.0",
-              "NSRequiresCertificateTransparency": false
-            },
-            "www.tracknbook.app": {
-              "NSIncludesSubdomains": true,
-              "NSExceptionAllowsInsecureHTTPLoads": false,
-              "NSExceptionRequiresForwardSecrecy": false,
-              "NSExceptionMinimumTLSVersion": "TLSv1.0",
-              "NSRequiresCertificateTransparency": false
-            }
-          }
-        }
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/tempImageDMDAZn.png",
+        "foregroundImage": "./assets/images/natively-dark.png",
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.tracknbook.app",
-      "versionCode": 1,
-      "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "POST_NOTIFICATIONS",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES",
-        "READ_MEDIA_VIDEO"
-      ],
-      "softwareKeyboardLayoutMode": "pan"
+      "package": "com.placeholder.app"
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -73,42 +34,14 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "This app needs access to your photo library to select photos.",
-          "cameraPermission": "This app needs access to your camera to take photos."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/app-icon-ptb.png",
-          "color": "#000000",
-          "defaultChannel": "default",
-          "enableBackgroundRemoteNotifications": true
-        }
-      ]
+      "expo-web-browser"
     ],
-    "scheme": "tracknbook",
+    "scheme": "natively",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {
-        "origin": false
-      },
-      "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev",
-      "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      }
-    },
-    "runtimeVersion": "1.0.0",
-    "updates": {
-      "enabled": false,
-      "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID"
-    },
-    "owner": "YOUR_EXPO_USERNAME"
+      "router": {}
+    }
   }
 }
