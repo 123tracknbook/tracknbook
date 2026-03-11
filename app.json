@@ -1,7 +1,9 @@
+
 {
   "expo": {
-    "name": "Natively",
-    "slug": "Natively",
+    "name": "TrackNBook",
+    "slug": "tracknbook",
+    "owner": "YOUR_EXPO_USERNAME",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,11 +14,36 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.placeholder.app",
+      "bundleIdentifier": "com.tracknbook.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "tracknbook.app": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.0"
+            },
+            "www.tracknbook.app": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.0"
+            }
+          }
+        },
+        "NSCameraUsageDescription": "This app uses the camera to allow you to take photos and videos.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images and videos.",
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone to record videos.",
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -24,8 +51,20 @@
         "foregroundImage": "./assets/images/natively-dark.png",
         "backgroundColor": "#000000"
       },
+      "package": "com.tracknbook.app",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "pan",
       "edgeToEdgeEnabled": true,
-      "package": "com.placeholder.app"
+      "permissions": [
+        "ACCESS_NETWORK_STATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "FOREGROUND_SERVICE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -34,14 +73,29 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you select images.",
+          "cameraPermission": "The app accesses your camera to let you take photos and videos.",
+          "microphonePermission": "The app accesses your microphone to let you record videos."
+        }
+      ]
     ],
-    "scheme": "natively",
+    "scheme": "tracknbook",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

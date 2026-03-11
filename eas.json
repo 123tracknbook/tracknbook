@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 13.2.0"
@@ -8,7 +9,9 @@
       "distribution": "internal",
       "autoIncrement": true,
       "ios": {
-        "simulator": true
+        "simulator": true,
+        "resourceClass": "m-medium",
+        "image": "latest"
       }
     },
     "preview": {
@@ -16,20 +19,26 @@
       "autoIncrement": true,
       "ios": {
         "simulator": false,
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "image": "latest"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "resourceClass": "m-medium",
+        "image": "latest"
       }
     },
     "production": {
       "autoIncrement": true,
       "ios": {
         "simulator": false,
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "image": "latest"
       },
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "resourceClass": "m-medium",
+        "image": "latest"
       }
     }
   },

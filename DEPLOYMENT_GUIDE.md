@@ -1,426 +1,216 @@
 
 # TrackNBook - App Store Deployment Guide
 
-This guide covers everything you need to do to get your TrackNBook app on the Apple App Store and Google Play Store.
+This guide will walk you through the steps to deploy your TrackNBook app to the Apple App Store and Google Play Store.
 
-## ✅ What's Already Done (Completed by Natively)
+## Prerequisites
 
-1. ✅ App configuration in `app.json` with proper bundle identifiers
-2. ✅ EAS Build configuration in `eas.json` for production builds
-3. ✅ iOS permissions configured (Camera, Photo Library, Microphone)
-4. ✅ Android permissions configured
-5. ✅ WebView wrapper implementation for https://www.tracknbook.app
-6. ✅ App Transport Security (ATS) exceptions for your domain
-7. ✅ Edge-to-edge display configuration
-8. ✅ Platform-specific code for iOS, Android, and Web
-9. ✅ Push notifications setup (expo-notifications)
-10. ✅ Camera/photo picker integration (expo-image-picker)
+Before you begin, make sure you have:
+- An Apple Developer Account ($99/year) - https://developer.apple.com
+- A Google Play Developer Account ($25 one-time fee) - https://play.google.com/console
+- EAS CLI installed globally
+- An Expo account
 
----
+## Step 1: Configure Your Expo Account
 
-## 🚨 CRITICAL STEPS YOU MUST DO
+### 1.1 Get Your Expo Username
+1. Go to https://expo.dev
+2. Sign in or create an account
+3. Your username is shown in the top right corner (e.g., @yourname)
 
-### Step 1: Update Configuration Placeholders
+### 1.2 Update app.json
+Open `app.json` and replace:
+- `"owner": "YOUR_EXPO_USERNAME"` → Your actual Expo username (without the @)
 
-Open `app.json` and replace these placeholder values:
+Example: `"owner": "johnsmith"`
 
-```json
-"owner": "YOUR_EXPO_USERNAME"  → Replace with your Expo account username
-"eas.projectId": "YOUR_EAS_PROJECT_ID"  → Replace with your EAS project ID (get this in Step 3)
-"updates.url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID"  → Replace with your EAS project ID
-```
+## Step 2: Create an EAS Project
 
-Open `eas.json` and replace these placeholders (for submission):
+### 2.1 Link Your Project to EAS
+You need to create an EAS project to get your project ID.
 
-```json
-"appleId": "YOUR_APPLE_ID_EMAIL"  → Your Apple ID email
-"ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID"  → Get this from App Store Connect
-"appleTeamId": "YOUR_APPLE_TEAM_ID"  → Get this from Apple Developer Portal
-```
+The EAS project ID will be automatically generated when you run your first build. For now, you can leave `"projectId": "YOUR_EAS_PROJECT_ID"` as is - it will be filled in automatically.
 
----
+## Step 3: iOS App Store Setup
 
-### Step 2: Apple Developer Program Enrollment
-
-**Cost: $99/year**
-
-1. Go to https://developer.apple.com/programs/enroll/
-2. Sign in with your Apple ID
-3. Complete the enrollment process
-4. Wait for approval (usually 24-48 hours)
-
-**Why this is required:** You cannot submit apps to the App Store without an active Apple Developer Program membership.
-
----
-
-### Step 3: Install EAS CLI and Initialize Project
-
-You'll need to run these commands in your terminal:
-
-```bash
-# Install EAS CLI globally
-npm install -g eas-cli
-
-# Login to your Expo account
-eas login
-
-# Initialize EAS in your project (this creates the project ID)
-eas build:configure
-```
-
-**What this does:**
-- Creates an EAS project and gives you a project ID
-- Links your local project to EAS Build servers
-- Generates credentials for code signing
-
-**Copy the project ID** that's generated and update it in `app.json` (Step 1).
-
----
-
-### Step 4: Create App in App Store Connect
-
-1. Go to https://appstoreconnect.apple.com/
+### 3.1 Create App Store Connect App
+1. Go to https://appstoreconnect.apple.com
 2. Click "My Apps" → "+" → "New App"
-3. Fill in the required information:
-   - **Platform:** iOS
-   - **Name:** TrackNBook (or your preferred name)
-   - **Primary Language:** English (or your choice)
-   - **Bundle ID:** Select `com.tracknbook.app` (must match app.json)
-   - **SKU:** Can be anything unique (e.g., "tracknbook-001")
-   - **User Access:** Full Access
+3. Fill in:
+   - **Platform**: iOS
+   - **Name**: TrackNBook
+   - **Primary Language**: English
+   - **Bundle ID**: Select "com.tracknbook.app" (you'll need to register this in your Apple Developer account first)
+   - **SKU**: tracknbook-ios (or any unique identifier)
 
-4. Save the **App ID** (numeric ID) - you'll need this for `eas.json`
+### 3.2 Register Bundle Identifier
+1. Go to https://developer.apple.com/account/resources/identifiers/list
+2. Click "+" to register a new identifier
+3. Select "App IDs" → Continue
+4. Select "App" → Continue
+5. Fill in:
+   - **Description**: TrackNBook
+   - **Bundle ID**: com.tracknbook.app (Explicit)
+   - **Capabilities**: Enable "Push Notifications" if needed
+6. Click "Continue" → "Register"
 
----
+### 3.3 Get Your Team ID
+1. Go to https://developer.apple.com/account
+2. Click "Membership" in the sidebar
+3. Copy your **Team ID** (10-character code like "ABC123XYZ4")
 
-### Step 5: Build Your iOS App
+### 3.4 Update eas.json
+Open `eas.json` and in the `submit.production.ios` section, replace:
+- `"appleId"`: Your Apple ID email (e.g., "john@example.com")
+- `"ascAppId"`: Your App Store Connect App ID (found in App Store Connect under App Information)
+- `"appleTeamId"`: Your Team ID from step 3.3
 
-Run this command in your terminal:
+## Step 4: Android Play Store Setup
+
+### 4.1 Create Play Console App
+1. Go to https://play.google.com/console
+2. Click "Create app"
+3. Fill in:
+   - **App name**: TrackNBook
+   - **Default language**: English (United States)
+   - **App or game**: App
+   - **Free or paid**: Free (or Paid if applicable)
+4. Accept declarations and click "Create app"
+
+### 4.2 Create Service Account for Automated Publishing
+1. Go to https://console.cloud.google.com
+2. Create a new project or select existing
+3. Enable "Google Play Android Developer API"
+4. Go to "IAM & Admin" → "Service Accounts"
+5. Click "Create Service Account"
+6. Name it "eas-submit" → Create
+7. Click on the service account → "Keys" tab → "Add Key" → "Create new key" → JSON
+8. Save the JSON file as `google-play-service-account.json` in your project root
+9. Go back to Play Console → "Setup" → "API access"
+10. Link the service account and grant "Release manager" permissions
+
+### 4.3 Verify Package Name
+The package name in `app.json` is already set to `com.tracknbook.app`. This will be automatically registered when you upload your first build.
+
+## Step 5: Build Your App
+
+### 5.1 iOS Build
+This command will build your iOS app and upload it to App Store Connect:
 
 ```bash
-# Build for iOS production
 eas build --platform ios --profile production
 ```
 
 **What happens:**
-- EAS will ask about code signing - choose "Let EAS handle it" (recommended)
-- Your app will be built on EAS servers (takes 10-20 minutes)
-- You'll get a download link for the `.ipa` file
+- EAS will prompt you to log in to your Apple Developer account
+- It will automatically create certificates and provisioning profiles
+- The build will take 15-30 minutes
+- Once complete, the app will be automatically uploaded to App Store Connect
 
-**Important:** Keep the terminal open or check your Expo dashboard for build status.
-
----
-
-### Step 6: Upload to App Store Connect
-
-**Option A: Using EAS Submit (Easiest)**
-
-```bash
-eas submit --platform ios --profile production
-```
-
-This automatically uploads your latest build to App Store Connect.
-
-**Option B: Using Transporter App (Manual)**
-
-1. Download Apple's Transporter app from the Mac App Store
-2. Download your `.ipa` file from the EAS build
-3. Open Transporter and drag the `.ipa` file into it
-4. Click "Deliver" to upload to App Store Connect
-
----
-
-### Step 7: Complete App Store Metadata
-
-Go to App Store Connect → Your App → "App Information" and fill in:
-
-#### Required Information:
-
-1. **App Icon** (1024x1024 pixels)
-   - Must be a PNG or JPEG
-   - No transparency
-   - No rounded corners (Apple adds them)
-
-2. **Screenshots** (Required for at least one device size)
-   - iPhone 6.7" Display (iPhone 14 Pro Max, 15 Pro Max)
-   - iPhone 6.5" Display (iPhone 11 Pro Max, XS Max)
-   - You need at least 1 screenshot, up to 10
-
-3. **App Description**
-   - What your app does
-   - Key features
-   - Benefits to users
-
-4. **Keywords**
-   - Comma-separated
-   - Max 100 characters
-   - Example: "booking,track,schedule,appointments,calendar"
-
-5. **Support URL**
-   - A webpage where users can get help
-   - Example: https://www.tracknbook.app/support
-
-6. **Privacy Policy URL** ⚠️ **REQUIRED**
-   - A webpage explaining your privacy practices
-   - Example: https://www.tracknbook.app/privacy
-
-7. **Category**
-   - Primary: Choose the most relevant (e.g., "Productivity", "Business")
-   - Secondary: Optional
-
-8. **Age Rating**
-   - Complete the questionnaire
-   - Be honest about content
-
-9. **Pricing**
-   - Free or Paid
-   - Select countries/regions
-
----
-
-### Step 8: App Review Information
-
-In App Store Connect, provide:
-
-1. **Contact Information**
-   - First Name, Last Name
-   - Phone Number
-   - Email Address
-
-2. **Demo Account** (if your app requires login)
-   - Username/Email
-   - Password
-   - Any special instructions for reviewers
-
-3. **Notes**
-   - Explain that this is a web app wrapper
-   - Mention any special features or functionality
-   - Explain how to test key features
-
----
-
-### Step 9: 🚨 CRITICAL - In-App Purchase Compliance
-
-**This is the most common reason for rejection.**
-
-If `www.tracknbook.app` allows users to:
-- Purchase digital goods or services
-- Subscribe to premium features
-- Unlock content with payments
-- Buy virtual items
-
-**You MUST integrate Apple's In-App Purchase (IAP) system.**
-
-Apple's rules:
-- ❌ You CANNOT use external payment systems (Stripe, PayPal, etc.) for digital goods consumed in-app
-- ✅ You MUST use Apple's IAP for subscriptions, premium features, digital content
-- ✅ Physical goods/services (hotel bookings, real-world appointments) are exempt
-
-**How to handle this:**
-
-**Option 1: Use RevenueCat (Recommended - Coming Soon to Natively)**
-- RevenueCat handles IAP complexity
-- Works across iOS and Android
-- Natively will support this soon
-
-**Option 2: Disable Payments in the App**
-- Remove payment buttons from the WebView
-- Direct users to your website for purchases
-- Use JavaScript injection to hide payment UI
-
-**Option 3: Implement Native IAP**
-- Use `expo-in-app-purchases` or `react-native-iap`
-- Requires backend integration
-- Complex but gives you full control
-
-**If you're unsure:** Contact me and I can help you determine if IAP is required for your specific use case.
-
----
-
-### Step 10: Submit for Review
-
-1. In App Store Connect, go to your app
-2. Click "Prepare for Submission"
-3. Ensure all required fields are filled (green checkmarks)
-4. Click "Submit for Review"
-
-**Review Timeline:**
-- Usually 24-48 hours
-- Can take up to 7 days during busy periods
-- You'll get email updates on status
-
----
-
-## 🤖 Android / Google Play Store (Optional)
-
-If you also want to publish on Android:
-
-### Step 1: Create Google Play Console Account
-
-**Cost: $25 one-time fee**
-
-1. Go to https://play.google.com/console/signup
-2. Pay the registration fee
-3. Complete your account setup
-
-### Step 2: Build Android App
+### 5.2 Android Build
+This command will build your Android app bundle:
 
 ```bash
 eas build --platform android --profile production
 ```
 
-This creates an `.aab` (Android App Bundle) file.
+**What happens:**
+- EAS will create a keystore for signing your app
+- The build will take 10-20 minutes
+- You'll get an `.aab` file (Android App Bundle)
 
-### Step 3: Create App in Google Play Console
+## Step 6: Submit to App Stores
 
-1. Go to Google Play Console
-2. Click "Create App"
-3. Fill in app details
-4. Upload your `.aab` file
-5. Complete store listing (similar to App Store)
-
-### Step 4: Submit for Review
-
-Google's review is typically faster (1-3 days).
-
----
-
-## 📋 Pre-Submission Checklist
-
-Before submitting, verify:
-
-- [ ] All placeholder values in `app.json` are replaced
-- [ ] App icon is 1024x1024 PNG with no transparency
-- [ ] Screenshots are prepared for required device sizes
-- [ ] Privacy Policy URL is live and accessible
-- [ ] Support URL is live and accessible
-- [ ] App description is clear and accurate
-- [ ] Demo account credentials work (if login required)
-- [ ] You've tested the app on a physical iOS device
-- [ ] In-App Purchase compliance is addressed (if applicable)
-- [ ] Age rating questionnaire is completed
-- [ ] Contact information is accurate
-
----
-
-## 🆘 Common Rejection Reasons & How to Fix
-
-### 1. "App is just a web view"
-
-**Fix:** Emphasize native features in your App Review notes:
-- "This app provides native push notifications for booking reminders"
-- "Integrates device camera for profile photos"
-- "Optimized native UI for iOS with edge-to-edge display"
-
-### 2. "Missing In-App Purchase for digital goods"
-
-**Fix:** See Step 9 above. Either:
-- Implement IAP
-- Remove payment functionality from the app
-- Prove that your payments are for physical goods/services
-
-### 3. "Privacy Policy missing or inadequate"
-
-**Fix:** Ensure your privacy policy:
-- Explains what data you collect
-- How you use the data
-- Third-party services you use
-- User rights (access, deletion, etc.)
-
-### 4. "App crashes on launch"
-
-**Fix:** Test on a physical device before submitting:
-- Borrow an iPhone from a friend
-- Use TestFlight for beta testing
-- Check crash logs in App Store Connect
-
-### 5. "Misleading screenshots or description"
-
-**Fix:** Ensure screenshots show actual app functionality, not marketing materials.
-
----
-
-## 🧪 Testing Before Submission
-
-### TestFlight (iOS Beta Testing)
-
-1. After your first build, enable TestFlight in App Store Connect
-2. Add internal testers (up to 100)
-3. Share the TestFlight link with testers
-4. Gather feedback before public release
+### 6.1 Submit to iOS App Store
+After your iOS build completes:
 
 ```bash
-# Build and auto-submit to TestFlight
-eas build --platform ios --profile production --auto-submit
+eas submit --platform ios --profile production
 ```
 
-### Internal Testing (Android)
+This will automatically upload your app to App Store Connect for review.
 
-1. In Google Play Console, create an "Internal Testing" track
-2. Upload your `.aab` file
-3. Add testers by email
-4. They can install via Play Store
+Then:
+1. Go to https://appstoreconnect.apple.com
+2. Select your app
+3. Fill in required metadata:
+   - App description
+   - Screenshots (required sizes: 6.5", 5.5")
+   - App icon
+   - Privacy policy URL
+   - Support URL
+4. Click "Submit for Review"
 
----
-
-## 📞 Need Help?
-
-If you get stuck on any of these steps:
-
-1. **Expo Documentation:** https://docs.expo.dev/
-2. **EAS Build Docs:** https://docs.expo.dev/build/introduction/
-3. **Apple Developer Support:** https://developer.apple.com/support/
-4. **Expo Forums:** https://forums.expo.dev/
-
----
-
-## 🎉 After Approval
-
-Once your app is approved:
-
-1. **Set Release Date:** You can release immediately or schedule a date
-2. **Monitor Reviews:** Respond to user feedback in App Store Connect
-3. **Track Analytics:** Use App Store Connect analytics
-4. **Plan Updates:** Use EAS Update for over-the-air updates (currently disabled in your config)
-
----
-
-## 💰 Cost Summary
-
-- **Apple Developer Program:** $99/year (required for iOS)
-- **Google Play Console:** $25 one-time (optional, for Android)
-- **EAS Build:** Free tier available, paid plans for more builds
-- **Total Minimum:** $99/year for iOS only
-
----
-
-## ⏱️ Timeline Estimate
-
-- **Configuration & Setup:** 1-2 hours
-- **First Build:** 20-30 minutes
-- **App Store Metadata:** 2-4 hours
-- **Apple Review:** 24-48 hours (up to 7 days)
-- **Total:** 3-5 days from start to App Store
-
----
-
-## 🔄 Future Updates
-
-To update your app after it's live:
+### 6.2 Submit to Google Play Store
+After your Android build completes:
 
 ```bash
-# Make your code changes, then:
-eas build --platform ios --profile production --auto-submit
+eas submit --platform android --profile production
 ```
 
-Then in App Store Connect:
-1. Create a new version
-2. Upload the new build
-3. Update "What's New" text
-4. Submit for review
+This will automatically upload your app to Google Play Console.
 
----
+Then:
+1. Go to https://play.google.com/console
+2. Select your app
+3. Complete the store listing:
+   - App description
+   - Screenshots (phone, tablet)
+   - Feature graphic (1024x500)
+   - App icon
+   - Privacy policy URL
+4. Complete content rating questionnaire
+5. Set up pricing & distribution
+6. Click "Send for review"
 
-**Good luck with your App Store submission! 🚀**
+## Step 7: App Review Timeline
 
-If you have questions about any of these steps, feel free to ask!
+- **iOS**: Typically 1-3 days for initial review
+- **Android**: Typically 1-7 days for initial review
+
+You'll receive email notifications about the review status.
+
+## Common Issues & Solutions
+
+### Issue: "No bundle identifier found"
+**Solution**: Make sure you've registered the bundle ID in your Apple Developer account (Step 3.2)
+
+### Issue: "Invalid provisioning profile"
+**Solution**: Run `eas credentials` and reset your credentials, then rebuild
+
+### Issue: "Build failed with exit code 1"
+**Solution**: Check that all placeholders in `app.json` and `eas.json` are filled in correctly
+
+### Issue: "Missing required icon sizes"
+**Solution**: Make sure your `assets/icon.png` is at least 1024x1024 pixels
+
+## Need Help?
+
+- EAS Build Documentation: https://docs.expo.dev/build/introduction/
+- EAS Submit Documentation: https://docs.expo.dev/submit/introduction/
+- Expo Forums: https://forums.expo.dev/
+
+## Summary Checklist
+
+Before running your first build, make sure you've completed:
+
+- [ ] Updated `app.json` with your Expo username
+- [ ] Created App Store Connect app (iOS)
+- [ ] Registered bundle identifier in Apple Developer account (iOS)
+- [ ] Updated `eas.json` with Apple IDs and Team ID (iOS)
+- [ ] Created Google Play Console app (Android)
+- [ ] Created service account JSON file (Android)
+- [ ] Verified all placeholder values are replaced
+
+Once everything is configured, you can build and submit with:
+
+```bash
+# Build both platforms
+eas build --platform all --profile production
+
+# Submit both platforms (after builds complete)
+eas submit --platform ios --profile production
+eas submit --platform android --profile production
+```
+
+Good luck with your app launch! 🚀

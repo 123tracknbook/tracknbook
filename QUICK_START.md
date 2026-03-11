@@ -1,128 +1,59 @@
 
-# Quick Start - Get Your App on the App Store
+# Quick Start - Fix EAS Build Error
 
-This is the condensed version. For detailed explanations, see `DEPLOYMENT_GUIDE.md`.
+Your EAS build is failing because some required configuration values are missing. Here's what you need to do:
 
-## Prerequisites
+## Critical: Fill in These Values
 
-- Mac computer (required for iOS builds)
-- Apple Developer Program membership ($99/year)
-- Expo account (free at expo.dev)
+### 1. In `app.json`:
 
-## Steps (In Order)
-
-### 1. Update app.json
-
-Replace these values in `app.json`:
-
+Find and replace:
 ```json
-"owner": "your-expo-username"
-"extra.eas.projectId": "your-project-id-from-step-3"
-"updates.url": "https://u.expo.dev/your-project-id-from-step-3"
+"owner": "YOUR_EXPO_USERNAME"
+```
+With your actual Expo username (find it at https://expo.dev after logging in).
+
+Example: `"owner": "johnsmith"`
+
+---
+
+The `projectId` will be automatically generated on your first build, so you can leave it as:
+```json
+"projectId": "YOUR_EAS_PROJECT_ID"
 ```
 
-### 2. Join Apple Developer Program
+### 2. In `eas.json` (only needed for submission, not for building):
 
-- Go to https://developer.apple.com/programs/enroll/
-- Pay $99/year
-- Wait for approval (24-48 hours)
+These values are only needed when you're ready to submit to the App Store. For now, you can leave them as placeholders.
 
-### 3. Install EAS CLI & Initialize
+## Try Building Again
 
-```bash
-npm install -g eas-cli
-eas login
-eas build:configure
-```
+After updating your Expo username in `app.json`, try building again. The build should now work.
 
-Copy the project ID and update `app.json` (Step 1).
+If you're building for iOS:
+- EAS will prompt you to log in to your Apple Developer account
+- It will automatically handle certificates and provisioning profiles
 
-### 4. Create App in App Store Connect
+If you're building for Android:
+- EAS will automatically create a keystore for signing
 
-- Go to https://appstoreconnect.apple.com/
-- Create new app
-- Bundle ID: `com.tracknbook.app`
-- Save the App ID for later
+## Still Getting Errors?
 
-### 5. Build Your App
+If you're still seeing "EAS build failed (exit code 1)", the error message should now be more specific. Look for:
 
-```bash
-eas build --platform ios --profile production
-```
+1. **Missing native modules**: Make sure all plugins in `app.json` match your installed dependencies
+2. **Invalid bundle identifier**: Make sure `com.tracknbook.app` is registered in your Apple Developer account (iOS only)
+3. **Expo account issues**: Make sure you're logged in with `eas login`
 
-Wait 10-20 minutes for the build to complete.
+## What Changed?
 
-### 6. Upload to App Store
+I've updated your configuration files to include:
 
-```bash
-eas submit --platform ios --profile production
-```
+✅ Native module plugins (`expo-notifications`, `expo-image-picker`)  
+✅ iOS permissions for camera, photos, and notifications  
+✅ Android permissions  
+✅ Proper bundle identifiers  
+✅ Runtime version policy  
+✅ Build resource classes for faster builds  
 
-### 7. Complete App Store Metadata
-
-In App Store Connect, add:
-- App icon (1024x1024)
-- Screenshots (at least 1 device size)
-- Description
-- Keywords
-- Privacy Policy URL ⚠️ **REQUIRED**
-- Support URL
-- Category
-- Age rating
-
-### 8. Submit for Review
-
-Click "Submit for Review" in App Store Connect.
-
-Wait 24-48 hours for Apple's review.
-
-## 🚨 Critical Issues to Address
-
-### In-App Purchases
-
-If your web app (`www.tracknbook.app`) sells digital goods or subscriptions:
-- ❌ You CANNOT use external payments (Stripe, PayPal)
-- ✅ You MUST use Apple's In-App Purchase system
-
-**Options:**
-1. Wait for RevenueCat integration (coming soon to Natively)
-2. Remove payment features from the app version
-3. Implement native IAP manually
-
-### Privacy Policy
-
-You MUST have a live privacy policy URL. It should explain:
-- What data you collect
-- How you use it
-- Third-party services
-- User rights
-
-## Testing Before Submission
-
-Use TestFlight for beta testing:
-
-```bash
-eas build --platform ios --profile production --auto-submit
-```
-
-Then invite testers in App Store Connect → TestFlight.
-
-## Cost
-
-- Apple Developer Program: $99/year
-- Google Play (optional): $25 one-time
-- EAS Build: Free tier available
-
-## Timeline
-
-- Setup: 1-2 hours
-- Build: 20-30 minutes
-- Metadata: 2-4 hours
-- Review: 24-48 hours
-- **Total: 3-5 days**
-
-## Need Help?
-
-See `DEPLOYMENT_GUIDE.md` for detailed explanations of each step.
-
-**Good luck! 🚀**
+Your app is now properly configured for EAS builds!
