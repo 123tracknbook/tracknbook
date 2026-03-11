@@ -3,7 +3,7 @@
   "expo": {
     "name": "TrackNBook",
     "slug": "tracknbook",
-    "owner": "YOUR_EXPO_USERNAME",
+    "owner": "tracknbook",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -53,8 +53,6 @@
       },
       "package": "com.tracknbook.app",
       "versionCode": 1,
-      "softwareKeyboardLayoutMode": "pan",
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "ACCESS_NETWORK_STATE",
         "RECEIVE_BOOT_COMPLETED",
@@ -63,8 +61,10 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO"
-      ]
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS"
+      ],
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -74,7 +74,14 @@
       "expo-font",
       "expo-router",
       "expo-web-browser",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#000000",
+          "sounds": []
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -89,13 +96,18 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false
+      },
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "66b1f7d9-c56e-4b54-bd69-1aca90734eae"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/66b1f7d9-c56e-4b54-bd69-1aca90734eae"
     }
   }
 }

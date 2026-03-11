@@ -1,22 +1,25 @@
 
 {
   "cli": {
-    "version": ">= 13.2.0"
+    "version": ">= 3.13.2",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "autoIncrement": true,
       "ios": {
         "simulator": true,
+        "resourceClass": "m-medium",
+        "image": "latest"
+      },
+      "android": {
         "resourceClass": "m-medium",
         "image": "latest"
       }
     },
     "preview": {
       "distribution": "internal",
-      "autoIncrement": true,
       "ios": {
         "simulator": false,
         "resourceClass": "m-medium",
@@ -29,7 +32,6 @@
       }
     },
     "production": {
-      "autoIncrement": true,
       "ios": {
         "simulator": false,
         "resourceClass": "m-medium",
@@ -45,8 +47,8 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "YOUR_APPLE_ID_EMAIL",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
+        "appleId": "your-apple-id@example.com",
+        "ascAppId": "1234567890",
         "appleTeamId": "YOUR_APPLE_TEAM_ID"
       },
       "android": {
