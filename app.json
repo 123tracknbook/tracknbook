@@ -77,7 +77,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/images/dabd91c6-a633-4f2f-88c2-ddfab8be7f50.png",
           "color": "#000000",
           "sounds": []
         }
@@ -109,7 +109,7 @@
       "url": "https://u.expo.dev/66b1f7d9-c56e-4b54-bd69-1aca90734eae"
     },
     "notification": {
-      "icon": "./assets/notification-icon.png"
+      "icon": "./assets/images/dabd91c6-a633-4f2f-88c2-ddfab8be7f50.png"
     }
   }
 }
