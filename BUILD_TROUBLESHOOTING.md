@@ -1,7 +1,58 @@
 
 # EAS Build Troubleshooting Guide
 
-## Latest Fixes Applied (Generation 22)
+## Latest Fixes Applied (Generation 23)
+
+### ✅ CRITICAL FIX: HEIC Image Format Issue
+**Problem:** The build was failing with "Unsupported MIME type: image/heic" error. This happens when image files have a `.png` extension but are actually HEIC format internally. Simply renaming a HEIC file to `.png` does NOT convert it - the file remains in HEIC format, which the build process cannot handle.
+
+**Solution:** 
+1. Updated `app.json` to use `./assets/icon.png` instead of `./assets/images/tracknbook logo.png`
+2. Removed filenames with spaces (spaces can cause issues in build paths)
+
+**IMPORTANT - How to Actually Convert HEIC to PNG:**
+If you need to use your custom logo, you MUST properly convert the HEIC files to PNG format:
+
+**On Mac:**
+1. Open the HEIC file in Preview app
+2. Go to File → Export
+3. Choose Format: PNG
+4. Save with a simple filename (no spaces): `tracknbook-logo.png`
+5. Replace the file in your assets folder
+
+**On Windows:**
+1. Use an online converter like https://heictopng.com or https://convertio.co/heic-png/
+2. Upload your HEIC file
+3. Download the converted PNG
+4. Save with a simple filename (no spaces): `tracknbook-logo.png`
+5. Replace the file in your assets folder
+
+**On Linux:**
+```bash
+# Install ImageMagick
+sudo apt-get install imagemagick
+
+# Convert HEIC to PNG
+convert input.heic output.png
+```
+
+**After converting:**
+1. Place the properly converted PNG file in `./assets/` folder
+2. Update `app.json` to reference the new file:
+   ```json
+   "icon": "./assets/tracknbook-logo.png",
+   "splash": {
+     "image": "./assets/tracknbook-logo.png"
+   }
+   ```
+
+**Files that need to be actual PNG format (not renamed HEIC):**
+- `./assets/icon.png` - Main app icon
+- `./assets/notification-icon.png` - Notification icon
+- `./assets/images/tracknbook logo.png` - If you want to use this, convert it properly first
+- Any other images referenced in `app.json`
+
+## Previous Fixes (Generation 22)
 
 ### ✅ CRITICAL FIX: Added Missing Environment Variables to eas.json
 **Problem:** The `eas.json` file was missing the `NODE_ENV` and `EAS_BUILD` environment variables that are required for the conditional checks in `metro.config.js` and `babel.config.js` to work properly during EAS builds.
@@ -144,13 +195,28 @@ Your `eas.json` should have `env` variables inside platform-specific sections:
 }
 ```
 
-### Step 3: Check Build Logs
+### Step 3: Verify All Images Are Actual PNG Files
+**CRITICAL:** Check that all image files referenced in `app.json` are actual PNG files, not renamed HEIC files:
+
+```bash
+# On Mac/Linux, check file type:
+file assets/icon.png
+# Should output: PNG image data, not HEIC
+
+file assets/notification-icon.png
+# Should output: PNG image data, not HEIC
+```
+
+If any file shows as HEIC, you MUST convert it properly (see instructions above).
+
+### Step 4: Check Build Logs
 When a build fails:
 1. Go to https://expo.dev/accounts/tracknbook/projects/tracknbook/builds
 2. Click on the failed build
 3. Look for specific error messages
 
 Common error patterns:
+- **"Unsupported MIME type: image/heic"** → Image file is HEIC format, needs proper conversion to PNG
 - **"Cannot find module"** → Missing dependency or incorrect import
 - **"Duplicate module"** → Conflicting dependencies
 - **"Gradle build failed"** (Android) → Native module or SDK issue
@@ -159,6 +225,14 @@ Common error patterns:
 - **"JSON parse error"** → Syntax error in JSON config files (check for trailing commas!)
 
 ## Common Build Failures and Solutions
+
+### Issue: Unsupported MIME type: image/heic
+**Symptoms:** Build fails with "Unsupported MIME type: image/heic" error
+**Solutions:**
+- DO NOT just rename HEIC files to .png - this doesn't work!
+- Properly convert HEIC files to PNG using Preview (Mac), online converter, or ImageMagick
+- Use simple filenames without spaces
+- Verify converted files are actual PNG format using `file` command
 
 ### Issue: JSON Parse Errors / Exit Code 1
 **Symptoms:** Build fails immediately with "exit code 1" or JSON parsing errors
@@ -188,6 +262,7 @@ Common error patterns:
 - Verify all asset paths in `app.json` are correct
 - Check that `assetBundlePatterns` includes all necessary files
 - Ensure icon files exist at specified paths
+- Ensure all image files are actual PNG format, not renamed HEIC
 
 ## Platform-Specific Notes
 
@@ -195,36 +270,40 @@ Common error patterns:
 - Requires valid Apple Developer account
 - Code signing is handled automatically by EAS
 - Build time: typically 15-25 minutes
+- HEIC format is NOT supported by the build process
 
 ### Android Builds
 - Produces `.aab` (app bundle) for production
 - Build time: typically 10-20 minutes
 - Signing is handled automatically by EAS
+- HEIC format is NOT supported by the build process
 
-## What Changed in This Fix (Generation 21)
+## What Changed in This Fix (Generation 23)
 
-1. **tsconfig.json**: Removed trailing comma in `include` array (CRITICAL FIX)
-2. **metro.config.js**: Added `EAS_BUILD !== "true"` check to disable dev middleware during builds
-3. **babel.config.js**: Added `EAS_BUILD !== "true"` check to disable editable components during builds
-4. **eas.json**: Added `"EAS_BUILD": "true"` environment variable to all build profiles
+1. **app.json**: Changed icon and splash image paths from `./assets/images/tracknbook logo.png` to `./assets/icon.png`
+2. **Removed filenames with spaces**: Spaces in filenames can cause build path issues
+3. **Added HEIC conversion instructions**: Detailed guide on how to properly convert HEIC to PNG
 
 ## Next Steps
 
 After applying these fixes:
-1. Commit all changes to your repository
-2. Trigger a new EAS build
-3. Monitor the build logs for any errors
-4. If the build still fails, check the specific error message in the logs
+1. **Verify all image files are actual PNG format** (not renamed HEIC)
+2. If you want to use your custom logo, properly convert it to PNG first
+3. Commit all changes to your repository
+4. Trigger a new EAS build
+5. Monitor the build logs for any errors
 
 ## Getting More Help
 
 If builds continue to fail:
 1. **Check the exact error message** in the EAS build logs
-2. **Verify your Expo account** has proper permissions
-3. **Ensure your project is properly linked** to your EAS account
-4. **Look for platform-specific errors** (iOS vs Android)
+2. **Verify all images are actual PNG files** using the `file` command
+3. **Ensure your Expo account** has proper permissions
+4. **Ensure your project is properly linked** to your EAS account
+5. **Look for platform-specific errors** (iOS vs Android)
 
 The error message will tell you exactly what's wrong. Common issues:
+- HEIC images that need proper conversion
 - Missing or incorrect credentials
 - Incompatible dependencies
 - Incorrect configuration
@@ -233,6 +312,8 @@ The error message will tell you exactly what's wrong. Common issues:
 
 ## Summary of All Applied Fixes
 
+✅ **CRITICAL**: Fixed HEIC image format issue - updated app.json to use actual PNG files (Generation 23)
+✅ **CRITICAL**: Removed filenames with spaces (Generation 23)
 ✅ **CRITICAL**: Fixed trailing comma in tsconfig.json (Generation 21)
 ✅ Added EAS_BUILD environment checks to metro.config.js (Generation 21)
 ✅ Added EAS_BUILD environment checks to babel.config.js (Generation 21)
@@ -247,4 +328,4 @@ The error message will tell you exactly what's wrong. Common issues:
 ✅ Moved web-only dependencies to devDependencies
 ✅ Added explicit NODE_ENV=production to build profiles
 
-Your build configuration is now optimized for EAS. The trailing comma fix should resolve the "exit code 1" error. If you're still experiencing issues, please share the specific error message from the build logs.
+Your build configuration is now optimized for EAS. The HEIC image issue should be resolved. If you want to use your custom TracknBook logo, you must properly convert it from HEIC to PNG format first (see instructions above).
