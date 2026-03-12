@@ -1,6 +1,8 @@
+
 module.exports = function (api) {
   api.cache(true);
 
+  // Only enable editable components in development AND when plugins exist
   const EDITABLE_COMPONENTS =
     process.env.EXPO_PUBLIC_ENABLE_EDIT_MODE === "TRUE" &&
     process.env.NODE_ENV === "development"
@@ -41,7 +43,7 @@ module.exports = function (api) {
       ],
       ...EDITABLE_COMPONENTS,
       "@babel/plugin-proposal-export-namespace-from",
-      "react-native-worklets/plugin", // react-native-worklets/plugin must be listed last!
+      "react-native-reanimated/plugin", // react-native-reanimated/plugin must be listed last!
     ],
   };
 };
