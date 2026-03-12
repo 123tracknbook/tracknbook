@@ -1,7 +1,34 @@
 
 # EAS Build Troubleshooting Guide
 
-## Latest Fixes Applied (Generation 20)
+## Latest Fixes Applied (Generation 21)
+
+### ✅ Fix 1: Critical - Fixed tsconfig.json Trailing Comma
+**Problem:** The `tsconfig.json` file had a trailing comma in the `include` array after `"workbox-config.js",` which causes JSON parsing errors during EAS builds. This is the most common cause of "exit code 1" build failures.
+
+**Solution:** Removed the trailing comma from the `include` array in `tsconfig.json`.
+
+```json
+"include": [
+  "**/*.ts",
+  "**/*.tsx",
+  ".expo/types/**/*.ts",
+  "expo-env.d.ts",
+  "workbox-config.js"
+]
+```
+
+### ✅ Fix 2: Added EAS_BUILD Environment Check
+**Problem:** Development-only code (custom Metro middleware, editable components) could interfere with production builds.
+
+**Solution:** Added `process.env.EAS_BUILD !== "true"` checks to both `metro.config.js` and `babel.config.js` to ensure development features are completely disabled during EAS builds.
+
+### ✅ Fix 3: Updated eas.json with EAS_BUILD Flag
+**Problem:** The build environment wasn't explicitly marked as an EAS build.
+
+**Solution:** Added `"EAS_BUILD": "true"` to all build profiles in `eas.json` to ensure proper environment detection.
+
+## Previous Fixes (Generation 20 - Still Applied)
 
 ### ✅ Fix 1: EAS.json Environment Variables
 **Problem:** The `env` configuration in `eas.json` was at the wrong nesting level, which could cause the production environment to not be set correctly.
@@ -72,10 +99,16 @@ Your `eas.json` should have `env` variables inside platform-specific sections:
   "build": {
     "production": {
       "ios": {
-        "env": { "NODE_ENV": "production" }
+        "env": { 
+          "NODE_ENV": "production",
+          "EAS_BUILD": "true"
+        }
       },
       "android": {
-        "env": { "NODE_ENV": "production" }
+        "env": { 
+          "NODE_ENV": "production",
+          "EAS_BUILD": "true"
+        }
       }
     }
   }
@@ -94,8 +127,17 @@ Common error patterns:
 - **"Gradle build failed"** (Android) → Native module or SDK issue
 - **"Pod install failed"** (iOS) → CocoaPods or native module issue
 - **"Metro bundler error"** → JavaScript bundling issue
+- **"JSON parse error"** → Syntax error in JSON config files (check for trailing commas!)
 
 ## Common Build Failures and Solutions
+
+### Issue: JSON Parse Errors / Exit Code 1
+**Symptoms:** Build fails immediately with "exit code 1" or JSON parsing errors
+**Solutions:**
+- Check `tsconfig.json` for trailing commas (MOST COMMON)
+- Check `app.json` for syntax errors
+- Check `eas.json` for syntax errors
+- Verify all JSON files are valid (no trailing commas, proper quotes)
 
 ### Issue: Metro Bundler Errors
 **Symptoms:** Errors during JavaScript bundling phase
@@ -130,12 +172,12 @@ Common error patterns:
 - Build time: typically 10-20 minutes
 - Signing is handled automatically by EAS
 
-## What Changed in This Fix
+## What Changed in This Fix (Generation 21)
 
-1. **eas.json**: Moved `env` variables to correct nesting level
-2. **app.json**: Removed `newArchEnabled` flag
-3. **.easignore**: Added more development files to exclude
-4. **babel.config.js**: Improved production check for plugins
+1. **tsconfig.json**: Removed trailing comma in `include` array (CRITICAL FIX)
+2. **metro.config.js**: Added `EAS_BUILD !== "true"` check to disable dev middleware during builds
+3. **babel.config.js**: Added `EAS_BUILD !== "true"` check to disable editable components during builds
+4. **eas.json**: Added `"EAS_BUILD": "true"` environment variable to all build profiles
 
 ## Next Steps
 
@@ -158,9 +200,14 @@ The error message will tell you exactly what's wrong. Common issues:
 - Incompatible dependencies
 - Incorrect configuration
 - Asset loading problems
+- JSON syntax errors (trailing commas!)
 
 ## Summary of All Applied Fixes
 
+✅ **CRITICAL**: Fixed trailing comma in tsconfig.json (Generation 21)
+✅ Added EAS_BUILD environment checks to metro.config.js (Generation 21)
+✅ Added EAS_BUILD environment checks to babel.config.js (Generation 21)
+✅ Added EAS_BUILD flag to eas.json build profiles (Generation 21)
 ✅ Fixed eas.json env variable placement (ios/android specific)
 ✅ Removed newArchEnabled flag from app.json
 ✅ Updated .easignore to exclude more dev files
@@ -171,4 +218,4 @@ The error message will tell you exactly what's wrong. Common issues:
 ✅ Moved web-only dependencies to devDependencies
 ✅ Added explicit NODE_ENV=production to build profiles
 
-Your build configuration is now optimized for EAS. If you're still experiencing issues, please share the specific error message from the build logs.
+Your build configuration is now optimized for EAS. The trailing comma fix should resolve the "exit code 1" error. If you're still experiencing issues, please share the specific error message from the build logs.

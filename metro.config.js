@@ -2,7 +2,6 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const { FileStore } = require('metro-cache');
 const path = require('path');
-const fs = require('fs');
 
 const config = getDefaultConfig(__dirname);
 
@@ -14,7 +13,9 @@ config.cacheStores = [
 ];
 
 // Only set up custom middleware in development (not during EAS builds)
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && process.env.EAS_BUILD !== 'true') {
+  const fs = require('fs');
+  
   // Custom server middleware to receive console.log messages from the app
   const LOG_FILE_PATH = path.join(__dirname, '.natively', 'app_console.log');
   const MAX_LOG_SIZE = 5 * 1024 * 1024; // 5MB

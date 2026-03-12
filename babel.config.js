@@ -2,11 +2,12 @@
 module.exports = function (api) {
   api.cache(true);
 
-  // Only enable editable components in development AND when plugins exist AND not on web
+  // Only enable editable components in development AND when plugins exist AND not on web AND not during EAS builds
   const EDITABLE_COMPONENTS =
     process.env.EXPO_PUBLIC_ENABLE_EDIT_MODE === "TRUE" &&
     process.env.NODE_ENV !== "production" &&
-    process.env.EXPO_PLATFORM !== "web"
+    process.env.EXPO_PLATFORM !== "web" &&
+    process.env.EAS_BUILD !== "true"
       ? [
           ["./babel-plugins/editable-elements.js", {}],
           ["./babel-plugins/inject-source-location.js", {}],
