@@ -2,12 +2,17 @@
 # Documentation files
 *.md
 docs/
+BUILD_TROUBLESHOOTING.md
+DEPLOYMENT_GUIDE.md
+QUICK_START.md
+README.md
 
 # Development files
 chat_history.json
 .vscode/
 .idea/
 .DS_Store
+.hotreload
 
 # Web-specific build files
 workbox-config.js
@@ -34,3 +39,6 @@ tests/
 # Metro cache
 .expo/
 node_modules/.cache/
+
+# NPM
+.npmrc
