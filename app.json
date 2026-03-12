@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "TracknBook",
@@ -77,7 +78,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/notification-icon.png",
           "color": "#000000",
           "sounds": []
         }
