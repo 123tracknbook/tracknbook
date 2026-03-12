@@ -1,28 +1,39 @@
 
-# Exclude development and documentation files from EAS builds
+# Documentation files
 *.md
-DEPLOYMENT_GUIDE.md
-QUICK_START.md
-README.md
 docs/
+
+# Development files
 chat_history.json
+.vscode/
+.idea/
+.DS_Store
 
-# Exclude web-specific files
+# Web-specific build files
 workbox-config.js
+dist/
+.expo/
 
-# Exclude backend
+# Backend (not needed for mobile builds)
 backend/
 
-# Exclude test files
+# Test files
 **/*.test.ts
 **/*.test.tsx
 **/*.spec.ts
 **/*.spec.tsx
+tests/
 
-# Exclude editor files
-.vscode/
-.idea/
-
-# Exclude git
+# Git files
 .git/
 .gitignore
+
+# Node modules (will be reinstalled during build)
+node_modules/
+
+# Babel plugins (custom tooling not needed in EAS)
+babel-plugins/
+
+# ESLint
+.eslintrc.js
+.eslintignore

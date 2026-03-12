@@ -7,6 +7,10 @@ const config = getDefaultConfig(__dirname);
 config.resolver.blockList = [
   /backend\/.*/,
   /docs\/.*/,
+  /node_modules\/react-router-dom\/.*/,
+  /node_modules\/leaflet\/.*/,
+  /node_modules\/react-leaflet\/.*/,
+  /node_modules\/workbox-.*/,
 ];
 
 // Add support for worklets

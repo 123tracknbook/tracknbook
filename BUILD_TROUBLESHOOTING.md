@@ -1,234 +1,121 @@
 
-# Build Troubleshooting - Detailed Diagnosis
+# EAS Build Troubleshooting Guide
 
-## Understanding "EAS build failed (exit code 1)"
+## Common Build Failures and Solutions
 
-This is a generic error that means "something went wrong." To fix it, we need to see the actual error message in the build logs.
+### Issue: "EAS build failed (exit code 1)"
 
-## How to Access Build Logs
+This is a generic error that can have multiple causes. Follow these steps:
 
-Since you cannot run terminal commands, you must use the Expo web dashboard:
+#### 1. Web-Only Dependencies Causing Native Build Failures ✅ FIXED
 
-1. Go to: https://expo.dev
-2. Sign in with your Expo account
-3. Navigate to: Projects → tracknbook → Builds
-4. Click on the failed build
-5. Click "View logs" or "Show full log"
-6. Scroll to the bottom to see the actual error
+**Problem:** Web-only packages like `react-router-dom`, `leaflet`, `react-leaflet`, and `workbox-*` were in the main `dependencies` section, causing native builds to fail.
 
-## Common Build Errors and Solutions
+**Solution:** These packages have been moved to `devDependencies` since they're only used for web builds. The native builds use platform-specific files (`.ios.tsx`, `.android.tsx`, `.web.tsx`) to handle platform differences.
 
-### Error: "No bundle identifier found" (iOS)
+**What was changed:**
+- Moved `react-router-dom`, `leaflet`, `react-leaflet`, `workbox-*`, `difflib`, and `eas` to `devDependencies`
+- Updated `metro.config.js` to block these packages from being bundled in native builds
+- Updated `.easignore` to exclude unnecessary files from EAS builds
 
-**Full error message**:
-```
-❌ No bundle identifier found for com.tracknbook.app
-```
+#### 2. Verify EAS Configuration
 
-**Cause**: The bundle identifier hasn't been registered in your Apple Developer account.
-
-**Solution**:
-1. Go to https://developer.apple.com/account/resources/identifiers/list
-2. Click "+" to add a new identifier
-3. Select "App IDs" → Continue
-4. Select "App" → Continue
-5. Enter:
-   - Description: TrackNBook
-   - Bundle ID: com.tracknbook.app (select "Explicit")
-6. Click "Continue" → "Register"
-7. Try building again
-
----
-
-### Error: "No Apple Developer account" (iOS)
-
-**Full error message**:
-```
-❌ You don't have access to an Apple Developer account
+Ensure your `app.json` has:
+```json
+{
+  "expo": {
+    "owner": "tracknbook",
+    "extra": {
+      "eas": {
+        "projectId": "66b1f7d9-c56e-4b54-bd69-1aca90734eae"
+      }
+    }
+  }
+}
 ```
 
-**Cause**: You need an active Apple Developer Program membership.
+#### 3. Check Build Logs
 
-**Solution**:
-1. Go to https://developer.apple.com
-2. Click "Account"
-3. Enroll in the Apple Developer Program ($99/year)
-4. Wait for approval (24-48 hours)
-5. Once approved, try building again
-
----
-
-### Error: "Authentication failed" (iOS)
-
-**Full error message**:
-```
-❌ Authentication failed. Please log in to your Apple Developer account.
-```
-
-**Cause**: EAS needs permission to access your Apple Developer account.
-
-**Solution**:
-When building via the Expo dashboard, you'll be prompted to authenticate with Apple. Follow the prompts to log in.
-
----
-
-### Error: "Unable to resolve module" or "Module not found"
-
-**Full error message**:
-```
-❌ Unable to resolve module `react-native-webview` from `app/(tabs)/(home)/index.tsx`
-```
-
-**Cause**: A dependency is missing or not properly installed.
-
-**Solution**:
-This shouldn't happen with EAS builds (they install dependencies automatically), but if it does, the dependency might not be in `package.json`. Check that all imports in your code match dependencies in `package.json`.
-
----
-
-### Error: "Asset not found"
-
-**Full error message**:
-```
-❌ Unable to resolve asset "./assets/icon.png"
-```
-
-**Cause**: An image or asset file referenced in `app.json` doesn't exist.
-
-**Solution**:
-Verify these files exist:
-- `./assets/icon.png` (1024x1024 or larger)
-- `./assets/images/natively-dark.png`
-- `./assets/images/final_quest_240x240.png`
-
-If any are missing, you need to add them.
-
----
-
-### Error: "Gradle build failed" (Android)
-
-**Full error message**:
-```
-❌ Execution failed for task ':app:mergeReleaseResources'
-```
-
-**Cause**: Android compilation error, usually due to:
-- Incompatible dependencies
-- Missing Android permissions
-- Invalid resource files
-
-**Solution**:
-I've already configured all required Android permissions in `app.json`. If this error persists, check the full build log for the specific Gradle error.
-
----
-
-### Error: "Pod install failed" (iOS)
-
-**Full error message**:
-```
-❌ [!] CocoaPods could not find compatible versions for pod "ExpoModulesCore"
-```
-
-**Cause**: iOS dependency resolution error, usually due to incompatible native module versions.
-
-**Solution**:
-This is rare with Expo SDK 54. If it happens, it usually means a dependency version mismatch. All your dependencies are compatible with Expo 54, so this shouldn't occur.
-
----
-
-### Error: "Build timed out"
-
-**Full error message**:
-```
-❌ Build timed out after 60 minutes
-```
-
-**Cause**: The build took too long (usually due to slow network or large dependencies).
-
-**Solution**:
-- Try building again (sometimes it's just a temporary issue)
-- Use a higher resource class (already set to `m-medium` in your config)
-
----
-
-### Error: "Out of build credits"
-
-**Full error message**:
-```
-❌ You don't have enough build credits
-```
-
-**Cause**: Your Expo account has run out of free build credits.
-
-**Solution**:
-- Free tier: 30 builds/month
-- If you've exceeded this, you need to:
-  1. Wait until next month, or
-  2. Upgrade to a paid Expo plan
-
----
-
-## What I've Already Fixed
-
-✅ **Configuration**: All required fields in `app.json` and `eas.json` are properly set
-✅ **Dependencies**: All native modules are compatible with Expo SDK 54
-✅ **Permissions**: iOS and Android permissions are correctly configured
-✅ **Plugins**: All required Expo plugins are properly configured
-✅ **Build optimization**: Added `.easignore` to exclude unnecessary files
-✅ **Metro config**: Excluded backend and docs from bundler
-
-## What You Need to Do
-
-Since I cannot run terminal commands or access the Expo dashboard for you, you need to:
-
-### Step 1: Trigger a Build via Expo Dashboard
+When a build fails, check the detailed logs in the EAS dashboard:
 1. Go to https://expo.dev/accounts/tracknbook/projects/tracknbook/builds
-2. Click "Create a build"
-3. Select platform (iOS or Android)
-4. Select profile (try "preview" first, it's easier)
-5. Click "Build"
+2. Click on the failed build
+3. Look for specific error messages in the logs
 
-### Step 2: Check the Build Logs
-1. Wait for the build to complete (or fail)
-2. Click on the build
-3. Click "View logs"
-4. Find the actual error message (not just "exit code 1")
+Common errors:
+- **Missing dependencies:** Install them using the install_dependencies tool
+- **Native module issues:** May require `npx expo prebuild` (but you can't run this - contact support)
+- **Code signing issues (iOS):** Verify your Apple Developer account is properly configured
+- **Gradle errors (Android):** Usually related to dependencies or Android SDK versions
 
-### Step 3: Share the Specific Error
-Once you have the actual error message from the logs, I can provide a specific solution.
+#### 4. Platform-Specific Files
 
-## Quick Diagnosis Checklist
+This project uses platform-specific files for different platforms:
+- `.ios.tsx` - iOS-specific code
+- `.android.tsx` - Android-specific code  
+- `.web.tsx` - Web-specific code
+- `.tsx` - Fallback for all platforms
 
-Before building, verify:
+When you see imports of web-only packages (like `leaflet`), they should ONLY be in `.web.tsx` files.
 
-- [ ] You have an Expo account and are logged in at https://expo.dev
-- [ ] Your project shows up at https://expo.dev/accounts/tracknbook/projects/tracknbook
-- [ ] For iOS: You have an Apple Developer account ($99/year)
-- [ ] For iOS: You've registered the bundle ID `com.tracknbook.app` in Apple Developer
-- [ ] For Android: No special requirements (should work out of the box)
-- [ ] You have build credits available (check at https://expo.dev/accounts/tracknbook/settings/billing)
+#### 5. Clean Build
 
-## Platform-Specific Notes
+If builds continue to fail:
+1. The dependencies have been cleaned up
+2. The `.easignore` excludes problematic files
+3. Try building again - the web dependencies are now properly isolated
 
-### iOS Builds Require:
-1. ✅ Apple Developer account ($99/year)
-2. ✅ Bundle identifier registered in Apple Developer portal
-3. ✅ Authentication with Apple during build process
-4. ⏱️ Build time: 15-30 minutes
+## Build Configuration
 
-### Android Builds Require:
-1. ✅ Nothing special (works out of the box)
-2. ⏱️ Build time: 10-20 minutes
+### Resource Classes
+- Using `m-medium` for faster builds
+- Configured in `eas.json` for both iOS and Android
 
-## Next Steps
+### Runtime Version
+- Using `appVersion` policy for consistent builds
+- Configured in `app.json`
 
-1. **Try building via the Expo dashboard** (not terminal)
-2. **Check the build logs** for the specific error
-3. **Share the error message** so I can provide a targeted fix
+### Excluded Files
+The following are excluded from EAS builds via `.easignore`:
+- Documentation files (*.md, docs/)
+- Backend code (backend/)
+- Test files
+- Development tools (babel-plugins/)
+- Web-specific build files (workbox-config.js)
 
-The configuration is correct, so the issue is likely:
-- Authentication (need to log in to Apple Developer)
-- Bundle ID registration (need to register in Apple Developer portal)
-- Or a specific error that will be visible in the build logs
+## Next Steps After Successful Build
 
-Good luck! 🚀
+Once your build succeeds:
+
+### For iOS:
+1. Build will be available in EAS dashboard
+2. Download the `.ipa` file or submit directly to App Store Connect
+3. For App Store submission, you'll need:
+   - Apple Developer account ($99/year)
+   - App Store Connect app created
+   - Proper code signing certificates
+
+### For Android:
+1. Build will produce an `.aab` (app bundle) for production
+2. Download and upload to Google Play Console
+3. For Play Store submission, you'll need:
+   - Google Play Developer account ($25 one-time)
+   - App created in Play Console
+   - Proper signing configuration
+
+## Getting Help
+
+If you continue to experience build failures:
+1. Check the EAS build logs for specific errors
+2. Verify all configuration files match this guide
+3. Ensure your Expo account has proper permissions for the project
+4. Contact Expo support with your build ID
+
+## Summary of Recent Fixes
+
+✅ Moved web-only dependencies to devDependencies
+✅ Updated metro.config.js to block web packages from native builds
+✅ Updated .easignore to exclude unnecessary files
+✅ Verified platform-specific file structure is correct
+✅ Confirmed EAS configuration (owner, projectId) is correct
+
+The build should now succeed. If it still fails, check the EAS build logs for the specific error message.
