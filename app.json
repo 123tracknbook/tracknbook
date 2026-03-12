@@ -43,7 +43,9 @@
         "NSCameraUsageDescription": "This app uses the camera to allow you to take photos and videos.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images and videos.",
         "NSMicrophoneUsageDescription": "This app needs access to your microphone to record videos.",
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -62,7 +64,8 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "RECORD_AUDIO",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "INTERNET"
       ],
       "softwareKeyboardLayoutMode": "pan"
     },
@@ -73,7 +76,6 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser",
       [
         "expo-notifications",
         {

@@ -1,0 +1,28 @@
+
+# Exclude development and documentation files from EAS builds
+*.md
+DEPLOYMENT_GUIDE.md
+QUICK_START.md
+README.md
+docs/
+chat_history.json
+
+# Exclude web-specific files
+workbox-config.js
+
+# Exclude backend
+backend/
+
+# Exclude test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Exclude editor files
+.vscode/
+.idea/
+
+# Exclude git
+.git/
+.gitignore

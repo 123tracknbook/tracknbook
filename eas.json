@@ -10,37 +10,31 @@
       "distribution": "internal",
       "ios": {
         "simulator": true,
-        "resourceClass": "m-medium",
-        "image": "latest"
+        "resourceClass": "m-medium"
       },
       "android": {
-        "resourceClass": "m-medium",
-        "image": "latest"
+        "resourceClass": "m-medium"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
         "simulator": false,
-        "resourceClass": "m-medium",
-        "image": "latest"
+        "resourceClass": "m-medium"
       },
       "android": {
         "buildType": "apk",
-        "resourceClass": "m-medium",
-        "image": "latest"
+        "resourceClass": "m-medium"
       }
     },
     "production": {
       "ios": {
         "simulator": false,
-        "resourceClass": "m-medium",
-        "image": "latest"
+        "resourceClass": "m-medium"
       },
       "android": {
         "buildType": "app-bundle",
-        "resourceClass": "m-medium",
-        "image": "latest"
+        "resourceClass": "m-medium"
       }
     }
   },
