@@ -5,10 +5,10 @@
     "owner": "tracknbook",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/30F68D9F-6898-4233-ACDD-E1F101E6F304.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/30F68D9F-6898-4233-ACDD-E1F101E6F304.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -48,7 +48,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/images/30F68D9F-6898-4233-ACDD-E1F101E6F304.png",
         "backgroundColor": "#000000"
       },
       "package": "com.tracknbook.app",
