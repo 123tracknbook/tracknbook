@@ -6,10 +6,10 @@
     "owner": "tracknbook",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/dabd91c6-a633-4f2f-88c2-ddfab8be7f50.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/images/dabd91c6-a633-4f2f-88c2-ddfab8be7f50.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -49,7 +49,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/images/dabd91c6-a633-4f2f-88c2-ddfab8be7f50.png",
         "backgroundColor": "#000000"
       },
       "package": "com.tracknbook.app",
@@ -69,7 +69,7 @@
       "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/dabd91c6-a633-4f2f-88c2-ddfab8be7f50.png",
       "bundler": "metro"
     },
     "plugins": [
