@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 3.13.2",
@@ -9,11 +10,11 @@
       "distribution": "internal",
       "ios": {
         "simulator": true,
-        "resourceClass": "m-medium",
+        "resourceClass": "medium",
         "image": "latest"
       },
       "android": {
-        "resourceClass": "m-medium",
+        "resourceClass": "medium",
         "image": "latest"
       }
     },
@@ -21,24 +22,24 @@
       "distribution": "internal",
       "ios": {
         "simulator": false,
-        "resourceClass": "m-medium",
+        "resourceClass": "medium",
         "image": "latest"
       },
       "android": {
         "buildType": "apk",
-        "resourceClass": "m-medium",
+        "resourceClass": "medium",
         "image": "latest"
       }
     },
     "production": {
       "ios": {
         "simulator": false,
-        "resourceClass": "m-medium",
+        "resourceClass": "medium",
         "image": "latest"
       },
       "android": {
         "buildType": "app-bundle",
-        "resourceClass": "m-medium",
+        "resourceClass": "medium",
         "image": "latest"
       }
     }
