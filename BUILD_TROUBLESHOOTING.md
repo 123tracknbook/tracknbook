@@ -1,7 +1,36 @@
 
 # EAS Build Troubleshooting Guide
 
-## Latest Fixes Applied (Generation 21)
+## Latest Fixes Applied (Generation 22)
+
+### ✅ CRITICAL FIX: Added Missing Environment Variables to eas.json
+**Problem:** The `eas.json` file was missing the `NODE_ENV` and `EAS_BUILD` environment variables that are required for the conditional checks in `metro.config.js` and `babel.config.js` to work properly during EAS builds.
+
+**Solution:** Added `env` configuration to all build profiles (development, preview, production) in `eas.json`:
+
+```json
+"production": {
+  "ios": {
+    "env": {
+      "NODE_ENV": "production",
+      "EAS_BUILD": "true"
+    }
+  },
+  "android": {
+    "env": {
+      "NODE_ENV": "production",
+      "EAS_BUILD": "true"
+    }
+  }
+}
+```
+
+This ensures that:
+- Development-only Metro middleware is disabled during builds
+- Editable component babel plugins are disabled during builds
+- Production optimizations are enabled
+
+## Previous Fixes (Generation 21)
 
 ### ✅ Fix 1: Critical - Fixed tsconfig.json Trailing Comma
 **Problem:** The `tsconfig.json` file had a trailing comma in the `include` array after `"workbox-config.js",` which causes JSON parsing errors during EAS builds. This is the most common cause of "exit code 1" build failures.
