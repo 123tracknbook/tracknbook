@@ -9,9 +9,9 @@
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/850848d5-4f4e-444a-afaf-ba5f67ecf49b.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#1a2332"
     },
     "assetBundlePatterns": [
       "**/*"
