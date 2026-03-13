@@ -6,7 +6,7 @@
     "owner": "tracknbook",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/final_quest_240x240.png",
+    "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/natively-dark.png",
@@ -49,7 +49,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/final_quest_240x240.png",
+        "foregroundImage": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
         "backgroundColor": "#000000"
       },
       "package": "com.tracknbook.app",
@@ -69,7 +69,7 @@
       "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
       "bundler": "metro"
     },
     "plugins": [
@@ -78,7 +78,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/final_quest_240x240.png",
+          "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
           "color": "#000000",
           "sounds": []
         }
@@ -110,7 +110,7 @@
       "url": "https://u.expo.dev/66b1f7d9-c56e-4b54-bd69-1aca90734eae"
     },
     "notification": {
-      "icon": "./assets/images/final_quest_240x240.png"
+      "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png"
     }
   }
 }
