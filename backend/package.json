@@ -28,7 +28,7 @@
     "postgres": "3.4.7"
   },
   "devDependencies": {
-    "@types/node": "22.19.3",
+    "@types/node": "22.19.15",
     "drizzle-kit": "0.31.5",
     "esbuild": "0.27.3",
     "tsx": "4.21.0",
