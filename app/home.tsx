@@ -8,11 +8,19 @@ import * as AppleAuthentication from "expo-apple-authentication";
 
 const injectedJavaScript = `
   (function() {
-    // Override any Apple Sign In triggers
+    // Intercept window.open for Apple OAuth
+    var originalOpen = window.open;
+    window.open = function(url, target, features) {
+      if (url && (url.includes('apple') || url.includes('oauth') || url.includes('auth'))) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
+        return null;
+      }
+      return originalOpen.apply(this, arguments);
+    };
+
     // Listen for clicks on Apple Sign In buttons
     document.addEventListener('click', function(e) {
       var target = e.target;
-      // Walk up the DOM to find Apple sign-in buttons
       while (target && target !== document.body) {
         var text = (target.innerText || target.textContent || '').toLowerCase();
         var ariaLabel = (target.getAttribute('aria-label') || '').toLowerCase();
@@ -21,6 +29,7 @@ const injectedJavaScript = `
         if (
           text.includes('sign in with apple') ||
           text.includes('continue with apple') ||
+          text.includes('sign up with apple') ||
           ariaLabel.includes('apple') ||
           className.includes('apple') ||
           id.includes('apple')
@@ -76,37 +85,60 @@ export default function HomeScreen() {
     return true;
   };
 
+  const triggerNativeAppleSignIn = async () => {
+    try {
+      console.log('Native Apple Sign In triggered');
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      console.log('Apple Sign In succeeded, passing credential back to WebView');
+      const js = `
+        window.dispatchEvent(new CustomEvent('nativeAppleSignIn', {
+          detail: ${JSON.stringify({
+            identityToken: credential.identityToken,
+            authorizationCode: credential.authorizationCode,
+            user: credential.user,
+            email: credential.email,
+            fullName: credential.fullName,
+          })}
+        }));
+        true;
+      `;
+      webViewRef.current?.injectJavaScript(js);
+    } catch (err: any) {
+      if (err.code !== 'ERR_CANCELED') {
+        console.error('Apple Sign In error:', err);
+      } else {
+        console.log('Apple Sign In cancelled by user');
+      }
+    }
+  };
+
   const handleMessage = async (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'APPLE_SIGN_IN' && Platform.OS === 'ios') {
-        console.log("Native Apple Sign In triggered from WebView");
-        const credential = await AppleAuthentication.signInAsync({
-          requestedScopes: [
-            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-            AppleAuthentication.AppleAuthenticationScope.EMAIL,
-          ],
-        });
-        console.log("Apple Sign In succeeded, passing credential back to WebView");
-        const js = `
-          window.dispatchEvent(new CustomEvent('nativeAppleSignIn', {
-            detail: ${JSON.stringify({
-              identityToken: credential.identityToken,
-              authorizationCode: credential.authorizationCode,
-              user: credential.user,
-              email: credential.email,
-              fullName: credential.fullName,
-            })}
-          }));
-          true;
-        `;
-        webViewRef.current?.injectJavaScript(js);
+        console.log('Native Apple Sign In triggered from WebView message');
+        await triggerNativeAppleSignIn();
       }
     } catch (error: any) {
-      if (error.code !== 'ERR_CANCELED') {
-        console.error('Apple Sign In error:', error);
-      } else {
-        console.log("Apple Sign In cancelled by user");
+      console.error('handleMessage parse error:', error);
+    }
+  };
+
+  const handleOpenWindow = (syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    const url = nativeEvent.targetUrl || '';
+    console.log('WebView onOpenWindow:', url);
+
+    // If it's an Apple OAuth URL, trigger native Apple Sign In instead
+    if (url.includes('apple') || url.includes('appleid.apple.com') || url.includes('oauth') || url.includes('auth')) {
+      console.log('Blocking OAuth popup, triggering native Apple Sign In');
+      if (Platform.OS === 'ios') {
+        triggerNativeAppleSignIn();
       }
     }
   };
@@ -142,6 +174,7 @@ export default function HomeScreen() {
             onHttpError={handleHttpError}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
             onMessage={handleMessage}
+            onOpenWindow={handleOpenWindow}
             injectedJavaScript={injectedJavaScript}
             javaScriptEnabled={true}
             domStorageEnabled={true}
