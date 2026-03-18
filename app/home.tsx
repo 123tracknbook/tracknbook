@@ -6,14 +6,29 @@ import { useTheme } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 
-// Injected into the WebView on every page load.
-// Intercepts clicks on Apple Sign In buttons ONLY and posts a message to native.
-// Does NOT override window.open — that caused the black screen.
 const injectedJavaScript = `
   (function() {
     if (window.__nativeAppleInterceptInstalled) return;
     window.__nativeAppleInterceptInstalled = true;
 
+    // Override window.open to intercept Apple OAuth popups
+    var _originalOpen = window.open;
+    window.open = function(url, target, features) {
+      var u = (url || '').toString().toLowerCase();
+      if (
+        u.includes('appleid.apple.com') ||
+        u.includes('idmsa.apple.com') ||
+        u.includes('apple') ||
+        u === '' || u === 'about:blank'
+      ) {
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
+        // Return a fake window object so the caller doesn't crash
+        return { closed: false, close: function() {}, focus: function() {}, postMessage: function() {} };
+      }
+      return _originalOpen.apply(window, arguments);
+    };
+
+    // Also intercept clicks on Apple Sign In buttons as a fallback
     function isAppleButton(el) {
       if (!el) return false;
       var text = (el.innerText || el.textContent || '').toLowerCase().trim();
@@ -40,14 +55,14 @@ const injectedJavaScript = `
         if (isAppleButton(el)) {
           e.preventDefault();
           e.stopImmediatePropagation();
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
+          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
           return;
         }
         el = el.parentElement;
       }
     }, true);
 
-    // Also check for pending credential on mount (in case event fired before listener)
+    // Dispatch any pending credential on mount
     if (window.__pendingNativeAppleSignIn) {
       var detail = window.__pendingNativeAppleSignIn;
       window.__pendingNativeAppleSignIn = null;
@@ -193,7 +208,7 @@ export default function HomeScreen() {
             thirdPartyCookiesEnabled={true}
             sharedCookiesEnabled={true}
             originWhitelist={['*']}
-            setSupportMultipleWindows={true}
+            setSupportMultipleWindows={false}
           />
         )}
         {loading && !error && (
