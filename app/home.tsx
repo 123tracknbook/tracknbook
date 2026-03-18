@@ -1,190 +1,16 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import { StyleSheet, View, ActivityIndicator, Platform, Text } from "react-native";
 import { WebView } from "react-native-webview";
 import { useTheme } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import * as AppleAuthentication from "expo-apple-authentication";
-
-const injectedJavaScript = `
-  (function() {
-    if (window.__nativeAppleInterceptInstalled) return;
-    window.__nativeAppleInterceptInstalled = true;
-
-    // 1. Override window.open to catch any popup attempt
-    var _originalOpen = window.open;
-    window.open = function(url, target, features) {
-      var u = (url || '').toString().toLowerCase();
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
-        return { closed: false, close: function() {}, focus: function() {}, postMessage: function() {}, location: { href: '' } };
-      }
-      return _originalOpen.apply(window, arguments);
-    };
-
-    // 2. Override window.location assignments that go to Apple
-    var _originalAssign = window.location.assign.bind(window.location);
-    var _originalReplace = window.location.replace.bind(window.location);
-    Object.defineProperty(window, 'location', {
-      get: function() { return window._location || location; },
-      configurable: true
-    });
-
-    // 3. Intercept all clicks and find Apple buttons up the DOM tree
-    function isAppleButton(el) {
-      if (!el) return false;
-      var text = (el.innerText || el.textContent || '').toLowerCase().trim();
-      var aria = (el.getAttribute ? el.getAttribute('aria-label') || '' : '').toLowerCase();
-      var cls = (el.className || '').toLowerCase();
-      var id = (el.id || '').toLowerCase();
-      var src = (el.src || '').toLowerCase();
-      return (
-        text.includes('continue with apple') ||
-        text.includes('sign in with apple') ||
-        text.includes('sign up with apple') ||
-        aria.includes('apple') ||
-        cls.includes('apple') ||
-        id.includes('apple') ||
-        src.includes('apple')
-      );
-    }
-
-    document.addEventListener('click', function(e) {
-      var el = e.target;
-      for (var i = 0; i < 10; i++) {
-        if (!el || el === document.body) break;
-        if (isAppleButton(el)) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          e.stopPropagation();
-          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
-          return;
-        }
-        el = el.parentElement;
-      }
-    }, true);
-
-    // 4. Also intercept form submits that might trigger Apple OAuth
-    document.addEventListener('submit', function(e) {
-      var form = e.target;
-      var action = (form.action || '').toLowerCase();
-      if (action.includes('apple') || action.includes('oauth')) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
-      }
-    }, true);
-
-    // 5. Dispatch any pending credential on mount
-    if (window.__pendingNativeAppleSignIn) {
-      var detail = window.__pendingNativeAppleSignIn;
-      window.__pendingNativeAppleSignIn = null;
-      window.dispatchEvent(new CustomEvent('nativeAppleSignIn', { detail: detail }));
-    }
-
-    true;
-  })();
-`;
 
 export default function HomeScreen() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [, setShowAppleButton] = useState(false);
   const webViewRef = useRef<WebView>(null);
-  const appleSignInInProgress = useRef(false);
-  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const webAppUrl = "https://www.tracknbook.app";
-
-  const clearLoading = useCallback(() => {
-    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-    loadingTimerRef.current = setTimeout(() => setLoading(false), 300);
-  }, []);
-
-  const triggerNativeAppleSignIn = useCallback(async () => {
-    if (appleSignInInProgress.current) return;
-    try {
-      const available = await AppleAuthentication.isAvailableAsync();
-      if (!available) return;
-      appleSignInInProgress.current = true;
-
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-
-      const detail = {
-        identityToken: credential.identityToken,
-        authorizationCode: credential.authorizationCode,
-        user: credential.user,
-        email: credential.email,
-        fullName: credential.fullName,
-      };
-
-      const js = `
-        (function() {
-          var detail = ${JSON.stringify(detail)};
-          window.__pendingNativeAppleSignIn = detail;
-          window.dispatchEvent(new CustomEvent('nativeAppleSignIn', { detail: detail }));
-        })();
-        true;
-      `;
-      webViewRef.current?.injectJavaScript(js);
-    } catch (err: any) {
-      if (err.code !== 'ERR_CANCELED') {
-        console.error('[HomeScreen] Apple Sign In error:', err);
-      }
-      clearLoading();
-    } finally {
-      appleSignInInProgress.current = false;
-    }
-  }, [clearLoading]);
-
-  const handleMessage = useCallback(async (event: any) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      console.log('[HomeScreen] WebView message:', JSON.stringify(data));
-      if (Platform.OS === 'ios') {
-        if (data.type === 'SHOW_APPLE_BUTTON') {
-          setShowAppleButton(true);
-        } else if (data.type === 'HIDE_APPLE_BUTTON') {
-          setShowAppleButton(false);
-        } else if (data.type === 'APPLE_SIGN_IN') {
-          await triggerNativeAppleSignIn();
-        }
-      }
-    } catch (e) {
-      // ignore parse errors
-    }
-  }, [triggerNativeAppleSignIn]);
-
-  // onOpenWindow fires when the WebView tries to open a new window (target="_blank", window.open, etc.)
-  // This is the most reliable intercept point — fires before any black screen appears
-  const handleOpenWindow = useCallback((syntheticEvent: any) => {
-    const url = syntheticEvent?.nativeEvent?.targetUrl || '';
-    console.log('[HomeScreen] onOpenWindow fired, url:', url);
-    if (Platform.OS === 'ios') {
-      triggerNativeAppleSignIn();
-    }
-  }, [triggerNativeAppleSignIn]);
-
-  const handleShouldStartLoadWithRequest = useCallback((request: any) => {
-    const url = request.url || '';
-    if (
-      url.includes('appleid.apple.com') ||
-      url.includes('idmsa.apple.com') ||
-      url.includes('apple.com/auth')
-    ) {
-      console.log('[HomeScreen] Blocked Apple OAuth main-frame navigation:', url);
-      if (Platform.OS === 'ios') {
-        setTimeout(() => triggerNativeAppleSignIn(), 0);
-      }
-      return false;
-    }
-    return true;
-  }, [triggerNativeAppleSignIn]);
 
   return (
     <>
@@ -192,8 +18,12 @@ export default function HomeScreen() {
       <View style={styles.container}>
         {error ? (
           <View style={styles.errorContainer}>
-            <Text style={[styles.errorTitle, { color: theme.colors.text }]}>Connection Error</Text>
-            <Text style={[styles.errorText, { color: theme.colors.text }]}>{error}</Text>
+            <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
+              Connection Error
+            </Text>
+            <Text style={[styles.errorText, { color: theme.colors.text }]}>
+              {error}
+            </Text>
             <Text style={[styles.errorHint, { color: theme.colors.text, opacity: 0.7 }]}>
               Please check your internet connection and try again.
             </Text>
@@ -203,18 +33,25 @@ export default function HomeScreen() {
             ref={webViewRef}
             source={{ uri: webAppUrl }}
             style={styles.webview}
-            onLoadStart={() => setLoading(true)}
-            onLoadEnd={() => clearLoading()}
+            onLoadStart={() => {
+              console.log('[WebView] Load started:', webAppUrl);
+              setLoading(true);
+            }}
+            onLoadEnd={() => {
+              console.log('[WebView] Load ended');
+              setLoading(false);
+              setError(null);
+            }}
             onError={(e) => {
               const msg = e.nativeEvent.description || e.nativeEvent.code || 'Unknown error';
+              console.log('[WebView] Error:', msg);
               setError(`Failed to load: ${msg}`);
               setLoading(false);
             }}
-            onHttpError={() => clearLoading()}
-            onMessage={handleMessage}
-            onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-            onOpenWindow={handleOpenWindow}
-            injectedJavaScript={injectedJavaScript}
+            onHttpError={(e) => {
+              console.log('[WebView] HTTP error:', e.nativeEvent.statusCode);
+              setLoading(false);
+            }}
             javaScriptEnabled={true}
             domStorageEnabled={true}
             scalesPageToFit={false}
@@ -240,15 +77,46 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  webview: { flex: 1 },
-  loadingContainer: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center', alignItems: 'center', backgroundColor: '#000',
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
   },
-  loadingText: { marginTop: 16, fontSize: 16, color: '#fff' },
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  errorText: { fontSize: 16, textAlign: 'center', marginBottom: 8 },
-  errorHint: { fontSize: 14, textAlign: 'center', marginTop: 8 },
+  webview: {
+    flex: 1,
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#fff',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorHint: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+  },
 });
