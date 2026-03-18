@@ -17,6 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
+      "associatedDomains": ["webcredentials:tracknbook.app"],
       "bundleIdentifier": "com.tracknbook.app",
       "buildNumber": "1",
       "infoPlist": {

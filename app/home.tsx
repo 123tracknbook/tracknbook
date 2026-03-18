@@ -63,6 +63,10 @@ export default function HomeScreen() {
             sharedCookiesEnabled={true}
             originWhitelist={['*']}
             setSupportMultipleWindows={false}
+            autoManageStatusBarEnabled={false}
+            keyboardDisplayRequiresUserAction={false}
+            dataDetectorTypes={'none'}
+            textZoom={100}
           />
         )}
         {loading && !error && (
