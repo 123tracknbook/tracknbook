@@ -1,4 +1,3 @@
-
 {
   "expo": {
     "name": "TracknBook",
@@ -75,6 +74,7 @@
     "plugins": [
       "expo-font",
       "expo-router",
+      "expo-apple-authentication",
       [
         "expo-notifications",
         {
