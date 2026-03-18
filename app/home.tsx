@@ -123,6 +123,15 @@ export default function HomeScreen() {
     }
   }, [triggerNativeAppleSignIn]);
 
+  const handleOpenWindow = useCallback((syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    const url = nativeEvent?.targetUrl || '';
+    console.log('[HomeScreen] onOpenWindow intercepted:', url);
+    if (Platform.OS === 'ios') {
+      setTimeout(() => triggerNativeAppleSignIn(), 0);
+    }
+  }, [triggerNativeAppleSignIn]);
+
   const handleShouldStartLoadWithRequest = useCallback((request: any) => {
     const url = request.url || '';
     console.log('[HomeScreen] WebView loading request:', url);
@@ -170,6 +179,7 @@ export default function HomeScreen() {
               setLoading(false);
             }}
             onHttpError={() => setLoading(false)}
+            onOpenWindow={handleOpenWindow}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
             onMessage={handleMessage}
             injectedJavaScript={injectedJavaScript}
