@@ -81,7 +81,38 @@ export default function HomeScreen() {
   };
 
   const handleShouldStartLoadWithRequest = (request: any) => {
-    console.log("WebView loading request:", request.url);
+    const url = request.url || '';
+    console.log('WebView loading request:', url);
+
+    // Block Apple OAuth navigations and trigger native sign in instead
+    if (
+      url.includes('appleid.apple.com') ||
+      url.includes('idmsa.apple.com') ||
+      (url.includes('apple') && (url.includes('oauth') || url.includes('auth') || url.includes('signin') || url.includes('sign_in')))
+    ) {
+      console.log('Blocking Apple OAuth navigation, triggering native sign in:', url);
+      if (Platform.OS === 'ios') {
+        // Must be called outside the return to avoid blocking the UI thread
+        setTimeout(() => triggerNativeAppleSignIn(), 0);
+      }
+      return false; // Block the navigation
+    }
+
+    // Block any navigation away from the main app domain that looks like OAuth
+    if (
+      !url.startsWith('https://www.tracknbook.app') &&
+      !url.startsWith('https://tracknbook.app') &&
+      !url.startsWith('about:') &&
+      !url.startsWith('blob:') &&
+      (url.includes('oauth') || url.includes('signin') || url.includes('sign_in') || url.includes('auth/'))
+    ) {
+      console.log('Blocking external OAuth navigation:', url);
+      if (Platform.OS === 'ios') {
+        setTimeout(() => triggerNativeAppleSignIn(), 0);
+      }
+      return false;
+    }
+
     return true;
   };
 
@@ -132,14 +163,10 @@ export default function HomeScreen() {
   const handleOpenWindow = (syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
     const url = nativeEvent.targetUrl || '';
-    console.log('WebView onOpenWindow:', url);
-
-    // If it's an Apple OAuth URL, trigger native Apple Sign In instead
-    if (url.includes('apple') || url.includes('appleid.apple.com') || url.includes('oauth') || url.includes('auth')) {
-      console.log('Blocking OAuth popup, triggering native Apple Sign In');
-      if (Platform.OS === 'ios') {
-        triggerNativeAppleSignIn();
-      }
+    console.log('WebView onOpenWindow blocked:', url);
+    // Always trigger native Apple Sign In when a new window is attempted from auth context
+    if (Platform.OS === 'ios') {
+      setTimeout(() => triggerNativeAppleSignIn(), 0);
     }
   };
 
