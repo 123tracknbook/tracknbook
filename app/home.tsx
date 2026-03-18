@@ -51,6 +51,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const webViewRef = useRef<WebView>(null);
+  const [appleSignInInProgress, setAppleSignInInProgress] = useState(false);
 
   const webAppUrl = "https://www.tracknbook.app";
 
@@ -117,7 +118,11 @@ export default function HomeScreen() {
   };
 
   const triggerNativeAppleSignIn = async () => {
+    if (appleSignInInProgress) return;
     try {
+      const available = await AppleAuthentication.isAvailableAsync();
+      if (!available) return;
+      setAppleSignInInProgress(true);
       console.log('Native Apple Sign In triggered');
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -145,6 +150,8 @@ export default function HomeScreen() {
       } else {
         console.log('Apple Sign In cancelled by user');
       }
+    } finally {
+      setAppleSignInInProgress(false);
     }
   };
 
@@ -161,12 +168,21 @@ export default function HomeScreen() {
   };
 
   const handleOpenWindow = (syntheticEvent: any) => {
-    const { nativeEvent } = syntheticEvent;
-    const url = nativeEvent.targetUrl || '';
-    console.log('WebView onOpenWindow blocked:', url);
-    // Always trigger native Apple Sign In when a new window is attempted from auth context
-    if (Platform.OS === 'ios') {
-      setTimeout(() => triggerNativeAppleSignIn(), 0);
+    try {
+      const { nativeEvent } = syntheticEvent;
+      const url = nativeEvent.targetUrl || '';
+      console.log('WebView onOpenWindow:', url);
+      if (
+        url.includes('appleid.apple.com') ||
+        url.includes('idmsa.apple.com') ||
+        (url.includes('apple') && (url.includes('oauth') || url.includes('auth') || url.includes('signin')))
+      ) {
+        if (Platform.OS === 'ios') {
+          setTimeout(() => triggerNativeAppleSignIn(), 0);
+        }
+      }
+    } catch (e) {
+      // swallow
     }
   };
 
@@ -205,7 +221,6 @@ export default function HomeScreen() {
             injectedJavaScript={injectedJavaScript}
             javaScriptEnabled={true}
             domStorageEnabled={true}
-            startInLoadingState={true}
             scalesPageToFit={true}
             allowsBackForwardNavigationGestures={Platform.OS === 'ios'}
             mixedContentMode="always"
