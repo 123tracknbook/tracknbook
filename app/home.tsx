@@ -6,63 +6,11 @@ import { useTheme } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 
+// Injected JS: dispatch pending credential on mount, nothing else
 const injectedJavaScript = `
   (function() {
     if (window.__nativeAppleInterceptInstalled) return;
     window.__nativeAppleInterceptInstalled = true;
-
-    // Override window.open to intercept Apple OAuth popups
-    var _originalOpen = window.open;
-    window.open = function(url, target, features) {
-      var u = (url || '').toString().toLowerCase();
-      if (
-        u.includes('appleid.apple.com') ||
-        u.includes('idmsa.apple.com') ||
-        u.includes('apple') ||
-        u === '' || u === 'about:blank'
-      ) {
-        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
-        // Return a fake window object so the caller doesn't crash
-        return { closed: false, close: function() {}, focus: function() {}, postMessage: function() {} };
-      }
-      return _originalOpen.apply(window, arguments);
-    };
-
-    // Also intercept clicks on Apple Sign In buttons as a fallback
-    function isAppleButton(el) {
-      if (!el) return false;
-      var text = (el.innerText || el.textContent || '').toLowerCase().trim();
-      var aria = (el.getAttribute('aria-label') || '').toLowerCase();
-      var cls = (el.className || '').toLowerCase();
-      var id = (el.id || '').toLowerCase();
-      return (
-        text === 'continue with apple' ||
-        text === 'sign in with apple' ||
-        text === 'sign up with apple' ||
-        aria.includes('sign in with apple') ||
-        aria.includes('continue with apple') ||
-        cls.includes('apple-signin') ||
-        cls.includes('apple-auth') ||
-        id.includes('apple-signin') ||
-        id.includes('apple-auth')
-      );
-    }
-
-    document.addEventListener('click', function(e) {
-      var el = e.target;
-      for (var i = 0; i < 6; i++) {
-        if (!el || el === document.body) break;
-        if (isAppleButton(el)) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
-          return;
-        }
-        el = el.parentElement;
-      }
-    }, true);
-
-    // Dispatch any pending credential on mount
     if (window.__pendingNativeAppleSignIn) {
       var detail = window.__pendingNativeAppleSignIn;
       window.__pendingNativeAppleSignIn = null;
@@ -76,6 +24,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAppleButton, setShowAppleButton] = useState(false);
   const webViewRef = useRef<WebView>(null);
   const appleSignInInProgress = useRef(false);
 
@@ -83,11 +32,11 @@ export default function HomeScreen() {
 
   const triggerNativeAppleSignIn = useCallback(async () => {
     if (appleSignInInProgress.current) return;
+    console.log('[HomeScreen] Native Apple Sign In button pressed');
     try {
       const available = await AppleAuthentication.isAvailableAsync();
       if (!available) return;
       appleSignInInProgress.current = true;
-      console.log('[HomeScreen] Native Apple Sign In triggered');
 
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -129,45 +78,21 @@ export default function HomeScreen() {
   const handleMessage = useCallback(async (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'APPLE_SIGN_IN' && Platform.OS === 'ios') {
-        console.log('[HomeScreen] APPLE_SIGN_IN message received from WebView');
-        await triggerNativeAppleSignIn();
+      console.log('[HomeScreen] Message from WebView:', data.type);
+      if (data.type === 'SHOW_APPLE_BUTTON' && Platform.OS === 'ios') {
+        setShowAppleButton(true);
+      } else if (data.type === 'HIDE_APPLE_BUTTON') {
+        setShowAppleButton(false);
       }
     } catch (e) {
       // ignore parse errors
     }
-  }, [triggerNativeAppleSignIn]);
-
-  const handleOpenWindow = useCallback((syntheticEvent: any) => {
-    const { nativeEvent } = syntheticEvent;
-    const url = nativeEvent?.targetUrl || '';
-    console.log('[HomeScreen] onOpenWindow intercepted:', url);
-    if (Platform.OS === 'ios') {
-      setTimeout(() => triggerNativeAppleSignIn(), 0);
-    }
-  }, [triggerNativeAppleSignIn]);
-
-  const handleShouldStartLoadWithRequest = useCallback((request: any) => {
-    const url = request.url || '';
-    console.log('[HomeScreen] WebView loading request:', url);
-    // Block navigation to Apple OAuth pages and trigger native flow instead
-    if (
-      url.includes('appleid.apple.com') ||
-      url.includes('idmsa.apple.com')
-    ) {
-      console.log('[HomeScreen] Blocking Apple OAuth navigation, triggering native sign in:', url);
-      if (Platform.OS === 'ios') {
-        setTimeout(() => triggerNativeAppleSignIn(), 0);
-      }
-      return false;
-    }
-    return true;
-  }, [triggerNativeAppleSignIn]);
+  }, []);
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.container, { backgroundColor: '#000' }]}>
+      <View style={styles.container}>
         {error ? (
           <View style={styles.errorContainer}>
             <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
@@ -194,8 +119,6 @@ export default function HomeScreen() {
               setLoading(false);
             }}
             onHttpError={() => setLoading(false)}
-            onOpenWindow={handleOpenWindow}
-            onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
             onMessage={handleMessage}
             injectedJavaScript={injectedJavaScript}
             javaScriptEnabled={true}
@@ -211,6 +134,20 @@ export default function HomeScreen() {
             setSupportMultipleWindows={false}
           />
         )}
+
+        {/* Native Apple Sign-In button overlay — shown when web app requests it */}
+        {Platform.OS === 'ios' && showAppleButton && !error && (
+          <View style={styles.appleButtonContainer}>
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={8}
+              style={styles.appleButton}
+              onPress={triggerNativeAppleSignIn}
+            />
+          </View>
+        )}
+
         {loading && !error && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#fff" />
@@ -225,9 +162,21 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000',
   },
   webview: {
     flex: 1,
+  },
+  appleButtonContainer: {
+    position: 'absolute',
+    bottom: 60,
+    left: 24,
+    right: 24,
+    alignItems: 'center',
+  },
+  appleButton: {
+    width: '100%',
+    height: 50,
   },
   loadingContainer: {
     position: 'absolute',
