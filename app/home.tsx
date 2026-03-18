@@ -12,6 +12,27 @@ export default function HomeScreen() {
 
   const webAppUrl = "https://www.tracknbook.app";
 
+  const injectedJavaScript = `
+  (function() {
+    function tagInputs() {
+      var emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"], input[placeholder*="email" i], input[placeholder*="Email" i]');
+      var passwordInputs = document.querySelectorAll('input[type="password"]');
+      emailInputs.forEach(function(el) {
+        el.setAttribute('autocomplete', 'username');
+        el.setAttribute('name', el.getAttribute('name') || 'username');
+      });
+      passwordInputs.forEach(function(el) {
+        el.setAttribute('autocomplete', 'current-password');
+        el.setAttribute('name', el.getAttribute('name') || 'password');
+      });
+    }
+    tagInputs();
+    var observer = new MutationObserver(tagInputs);
+    observer.observe(document.body, { childList: true, subtree: true });
+  })();
+  true;
+`;
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -65,6 +86,10 @@ export default function HomeScreen() {
             setSupportMultipleWindows={false}
             autoManageStatusBarEnabled={false}
             keyboardDisplayRequiresUserAction={false}
+            autoComplete="on"
+            contentMode="mobile"
+            allowsLinkPreview={false}
+            injectedJavaScript={injectedJavaScript}
             dataDetectorTypes={'none'}
             textZoom={100}
           />
