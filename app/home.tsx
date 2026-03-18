@@ -132,17 +132,19 @@ export default function HomeScreen() {
       });
       console.log('Apple Sign In succeeded, passing credential back to WebView');
       const js = `
-        window.dispatchEvent(new CustomEvent('nativeAppleSignIn', {
-          detail: ${JSON.stringify({
-            identityToken: credential.identityToken,
-            authorizationCode: credential.authorizationCode,
-            user: credential.user,
-            email: credential.email,
-            fullName: credential.fullName,
-          })}
-        }));
-        true;
-      `;
+  (function() {
+    var detail = ${JSON.stringify({
+      identityToken: credential.identityToken,
+      authorizationCode: credential.authorizationCode,
+      user: credential.user,
+      email: credential.email,
+      fullName: credential.fullName,
+    })};
+    window.__pendingNativeAppleSignIn = detail;
+    window.dispatchEvent(new CustomEvent('nativeAppleSignIn', { detail: detail }));
+  })();
+  true;
+`;
       webViewRef.current?.injectJavaScript(js);
     } catch (err: any) {
       if (err.code !== 'ERR_CANCELED') {
