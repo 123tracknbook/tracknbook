@@ -10,16 +10,71 @@ const injectedJavaScript = `
     if (window.__nativeAppleInterceptInstalled) return;
     window.__nativeAppleInterceptInstalled = true;
 
-    // Override window.open — intercept ALL popups and report them
-    var _orig = window.open;
+    // 1. Override window.open to catch any popup attempt
+    var _originalOpen = window.open;
     window.open = function(url, target, features) {
+      var u = (url || '').toString().toLowerCase();
       if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'WINDOW_OPEN', url: (url || '') }));
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
+        return { closed: false, close: function() {}, focus: function() {}, postMessage: function() {}, location: { href: '' } };
       }
-      return { closed: false, close: function(){}, focus: function(){}, postMessage: function(){}, location: { href: '' } };
+      return _originalOpen.apply(window, arguments);
     };
 
-    // Replay pending credential
+    // 2. Override window.location assignments that go to Apple
+    var _originalAssign = window.location.assign.bind(window.location);
+    var _originalReplace = window.location.replace.bind(window.location);
+    Object.defineProperty(window, 'location', {
+      get: function() { return window._location || location; },
+      configurable: true
+    });
+
+    // 3. Intercept all clicks and find Apple buttons up the DOM tree
+    function isAppleButton(el) {
+      if (!el) return false;
+      var text = (el.innerText || el.textContent || '').toLowerCase().trim();
+      var aria = (el.getAttribute ? el.getAttribute('aria-label') || '' : '').toLowerCase();
+      var cls = (el.className || '').toLowerCase();
+      var id = (el.id || '').toLowerCase();
+      var src = (el.src || '').toLowerCase();
+      return (
+        text.includes('continue with apple') ||
+        text.includes('sign in with apple') ||
+        text.includes('sign up with apple') ||
+        aria.includes('apple') ||
+        cls.includes('apple') ||
+        id.includes('apple') ||
+        src.includes('apple')
+      );
+    }
+
+    document.addEventListener('click', function(e) {
+      var el = e.target;
+      for (var i = 0; i < 10; i++) {
+        if (!el || el === document.body) break;
+        if (isAppleButton(el)) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
+          return;
+        }
+        el = el.parentElement;
+      }
+    }, true);
+
+    // 4. Also intercept form submits that might trigger Apple OAuth
+    document.addEventListener('submit', function(e) {
+      var form = e.target;
+      var action = (form.action || '').toLowerCase();
+      if (action.includes('apple') || action.includes('oauth')) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APPLE_SIGN_IN' }));
+      }
+    }, true);
+
+    // 5. Dispatch any pending credential on mount
     if (window.__pendingNativeAppleSignIn) {
       var detail = window.__pendingNativeAppleSignIn;
       window.__pendingNativeAppleSignIn = null;
@@ -34,6 +89,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [, setShowAppleButton] = useState(false);
   const webViewRef = useRef<WebView>(null);
   const appleSignInInProgress = useRef(false);
   const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,11 +147,17 @@ export default function HomeScreen() {
       const data = JSON.parse(event.nativeEvent.data);
       console.log('[HomeScreen] WebView message:', JSON.stringify(data));
       if (Platform.OS === 'ios') {
-        if (data.type === 'APPLE_SIGN_IN' || data.type === 'WINDOW_OPEN') {
+        if (data.type === 'SHOW_APPLE_BUTTON') {
+          setShowAppleButton(true);
+        } else if (data.type === 'HIDE_APPLE_BUTTON') {
+          setShowAppleButton(false);
+        } else if (data.type === 'APPLE_SIGN_IN') {
           await triggerNativeAppleSignIn();
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // ignore parse errors
+    }
   }, [triggerNativeAppleSignIn]);
 
   // onOpenWindow fires when the WebView tries to open a new window (target="_blank", window.open, etc.)
@@ -109,9 +171,13 @@ export default function HomeScreen() {
   }, [triggerNativeAppleSignIn]);
 
   const handleShouldStartLoadWithRequest = useCallback((request: any) => {
-    const url = (request.url || '').toLowerCase();
-    if (url.includes('appleid.apple.com') || url.includes('idmsa.apple.com')) {
-      console.log('[HomeScreen] Blocked Apple OAuth main-frame navigation');
+    const url = request.url || '';
+    if (
+      url.includes('appleid.apple.com') ||
+      url.includes('idmsa.apple.com') ||
+      url.includes('apple.com/auth')
+    ) {
+      console.log('[HomeScreen] Blocked Apple OAuth main-frame navigation:', url);
       if (Platform.OS === 'ios') {
         setTimeout(() => triggerNativeAppleSignIn(), 0);
       }
