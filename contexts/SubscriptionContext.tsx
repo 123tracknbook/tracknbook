@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import Purchases, { CustomerInfo, PurchasesOffering } from 'react-native-purchases';
 import RevenueCatUI, { presentCustomerCenter } from 'react-native-purchases-ui';
 
-const API_KEY = 'test_qAXYswptqpKWbBdOOYcJErIygDx';
+const API_KEY = 'appl_VvUEhtaTtsgThAClFhpGuUaFcdc';
 const ENTITLEMENT_ID = 'TracknBook Pro';
 
 interface SubscriptionContextType {
