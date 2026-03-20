@@ -27,14 +27,19 @@ export default function HomeScreen() {
   const webAppUrl = "https://www.tracknbook.app";
 
   const handleMessage = (event: any) => {
+    const raw = event.nativeEvent.data;
+    console.log('[WebView] onMessage received raw data:', raw);
     try {
-      const data = JSON.parse(event.nativeEvent.data);
+      const data = JSON.parse(raw);
+      console.log('[WebView] onMessage parsed:', data);
       if (data.type === 'INTERCEPT_URL') {
         console.log('[WebView] SPA URL change intercepted, redirecting to native paywall:', data.url);
         router.push('/paywall');
         return;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log('[WebView] onMessage JSON parse failed, raw was:', raw);
+    }
   };
 
   const injectedJavaScript = `
