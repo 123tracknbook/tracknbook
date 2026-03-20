@@ -15,6 +15,7 @@ import {
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import * as Notifications from 'expo-notifications';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -86,19 +87,22 @@ export default function RootLayout() {
         value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
       >
         <WidgetProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="camera-demo" options={{ headerShown: true, title: 'Camera Demo' }} />
-              <Stack.Screen name="notifications-demo" options={{ headerShown: true, title: 'Notifications Demo' }} />
-              <Stack.Screen name="+not-found" />
-            </Stack>
-            <SystemBars style="light" />
-          </GestureHandlerRootView>
+          <SubscriptionProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
+                <Stack.Screen name="camera-demo" options={{ headerShown: true, title: 'Camera Demo' }} />
+                <Stack.Screen name="notifications-demo" options={{ headerShown: true, title: 'Notifications Demo' }} />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+              <SystemBars style="light" />
+            </GestureHandlerRootView>
+          </SubscriptionProvider>
         </WidgetProvider>
       </ThemeProvider>
     </>
