@@ -29,8 +29,8 @@ export default function HomeScreen() {
     try {
       const data = JSON.parse(raw);
       console.log('[WebView] onMessage parsed:', data);
-      if (data.type === 'INTERCEPT_URL') {
-        console.log('[WebView] SPA URL change intercepted, redirecting to native paywall:', data.url);
+      if (data.type === 'INTERCEPT_URL' || data.type === 'OPEN_PAYWALL') {
+        console.log('[WebView] Paywall trigger received, type:', data.type, data.url ? 'url: ' + data.url : '');
         router.push('/paywall');
         return;
       }
@@ -76,6 +76,36 @@ export default function HomeScreen() {
         checkUrl(currentUrl);
       }
     }, 500);
+
+    // --- Button click interception ---
+    function interceptPlanButtons() {
+      var elements = document.querySelectorAll('a, button');
+      elements.forEach(function(el) {
+        if (el.textContent && el.textContent.trim().toLowerCase().includes('change plan')) {
+          if (!el.dataset.nativeIntercepted) {
+            el.dataset.nativeIntercepted = 'true';
+            el.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+              } catch(err) {}
+            }, true);
+          }
+        }
+      });
+    }
+
+    // Run on DOM ready and watch for dynamic content
+    document.addEventListener('DOMContentLoaded', interceptPlanButtons);
+    var btnObserver = new MutationObserver(interceptPlanButtons);
+    document.addEventListener('DOMContentLoaded', function() {
+      btnObserver.observe(document.body, { childList: true, subtree: true });
+    });
+    // Also run immediately in case DOM is already ready
+    if (document.readyState !== 'loading') {
+      interceptPlanButtons();
+    }
   })();
   true;
 `;
