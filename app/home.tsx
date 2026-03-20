@@ -26,8 +26,47 @@ export default function HomeScreen() {
 
   const webAppUrl = "https://www.tracknbook.app";
 
+  const handleMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'INTERCEPT_URL') {
+        console.log('[WebView] SPA URL change intercepted, redirecting to native paywall:', data.url);
+        router.push('/paywall');
+        return;
+      }
+    } catch (e) {}
+  };
+
   const injectedJavaScript = `
   (function() {
+    // --- SPA URL interception ---
+    function checkUrl(url) {
+      if (url && (
+        (url.includes('/settings') && url.includes('tab=billing')) ||
+        url.includes('/plans')
+      )) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'INTERCEPT_URL', url: url }));
+      }
+    }
+
+    var originalPushState = history.pushState;
+    var originalReplaceState = history.replaceState;
+
+    history.pushState = function() {
+      originalPushState.apply(this, arguments);
+      checkUrl(window.location.href);
+    };
+
+    history.replaceState = function() {
+      originalReplaceState.apply(this, arguments);
+      checkUrl(window.location.href);
+    };
+
+    window.addEventListener('popstate', function() {
+      checkUrl(window.location.href);
+    });
+
+    // --- Autofill tagging ---
     function tagInputs() {
       var emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"], input[placeholder*="email" i], input[placeholder*="Email" i]');
       var passwordInputs = document.querySelectorAll('input[type="password"]');
@@ -107,6 +146,17 @@ export default function HomeScreen() {
             dataDetectorTypes={'none'}
             textZoom={100}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+            onNavigationStateChange={(navState) => {
+              const url = navState.url;
+              if (
+                (url.includes('/settings') && url.includes('tab=billing')) ||
+                url.includes('/plans')
+              ) {
+                console.log('[WebView] onNavigationStateChange intercepted paywall URL:', url);
+                router.push('/paywall');
+              }
+            }}
+            onMessage={handleMessage}
           />
         )}
         {loading && !error && (
