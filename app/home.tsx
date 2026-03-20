@@ -2,13 +2,27 @@ import React, { useState, useRef } from "react";
 import { StyleSheet, View, ActivityIndicator, Platform, Text } from "react-native";
 import { WebView } from "react-native-webview";
 import { useTheme } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 
 export default function HomeScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const webViewRef = useRef<WebView>(null);
+
+  const handleShouldStartLoadWithRequest = (request: { url: string }) => {
+    const url = request.url;
+    if (
+      (url.includes('tracknbook.app/settings') && url.includes('tab=billing')) ||
+      url.includes('tracknbook.app/plans')
+    ) {
+      console.log('[WebView] Intercepted paywall URL, redirecting to native paywall:', url);
+      router.push('/paywall');
+      return false;
+    }
+    return true;
+  };
 
   const webAppUrl = "https://www.tracknbook.app";
 
@@ -92,6 +106,7 @@ export default function HomeScreen() {
             injectedJavaScript={injectedJavaScript}
             dataDetectorTypes={'none'}
             textZoom={100}
+            onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
           />
         )}
         {loading && !error && (
