@@ -13,10 +13,7 @@ export default function HomeScreen() {
 
   const handleShouldStartLoadWithRequest = (request: { url: string }) => {
     const url = request.url;
-    if (
-      (url.includes('tracknbook.app/settings') && url.includes('tab=billing')) ||
-      url.includes('tracknbook.app/plans')
-    ) {
+    if (url.includes('tracknbook.app/plans')) {
       console.log('[WebView] Intercepted paywall URL, redirecting to native paywall:', url);
       router.push('/paywall');
       return false;
@@ -46,10 +43,7 @@ export default function HomeScreen() {
   (function() {
     // --- SPA URL interception ---
     function checkUrl(url) {
-      if (url && (
-        (url.includes('/settings') && url.includes('tab=billing')) ||
-        url.includes('/plans')
-      )) {
+      if (url && url.includes('/plans')) {
         window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'INTERCEPT_URL', url: url }));
       }
     }
@@ -153,10 +147,7 @@ export default function HomeScreen() {
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
             onNavigationStateChange={(navState) => {
               const url = navState.url;
-              if (
-                (url.includes('/settings') && url.includes('tab=billing')) ||
-                url.includes('/plans')
-              ) {
+              if (url.includes('/plans')) {
                 console.log('[WebView] onNavigationStateChange intercepted paywall URL:', url);
                 router.push('/paywall');
               }
