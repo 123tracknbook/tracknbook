@@ -39,12 +39,14 @@ export default function HomeScreen() {
     }
   };
 
-  const injectedJavaScript = `
+  const injectedJavaScriptBeforeContentLoaded = `
   (function() {
-    // --- SPA URL interception ---
+    // --- SPA URL interception (runs before framework loads) ---
     function checkUrl(url) {
       if (url && url.includes('/plans')) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'INTERCEPT_URL', url: url }));
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'INTERCEPT_URL', url: url }));
+        } catch(e) {}
       }
     }
 
@@ -65,7 +67,21 @@ export default function HomeScreen() {
       checkUrl(window.location.href);
     });
 
-    // --- Autofill tagging ---
+    // Polling fallback every 500ms
+    var lastUrl = window.location.href;
+    setInterval(function() {
+      var currentUrl = window.location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        checkUrl(currentUrl);
+      }
+    }, 500);
+  })();
+  true;
+`;
+
+  const injectedJavaScript = `
+  (function() {
     function tagInputs() {
       var emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"], input[placeholder*="email" i], input[placeholder*="Email" i]');
       var passwordInputs = document.querySelectorAll('input[type="password"]');
@@ -141,6 +157,7 @@ export default function HomeScreen() {
             autoComplete="on"
             contentMode="mobile"
             allowsLinkPreview={false}
+            injectedJavaScriptBeforeContentLoaded={injectedJavaScriptBeforeContentLoaded}
             injectedJavaScript={injectedJavaScript}
             dataDetectorTypes={'none'}
             textZoom={100}
