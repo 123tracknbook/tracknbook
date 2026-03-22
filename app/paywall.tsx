@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,10 +16,10 @@ import type { PurchasesError } from 'react-native-purchases';
 
 // Error boundary to catch RevenueCatUI.Paywall throws (e.g. native module not linked in Expo Go)
 class PaywallErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
+  { children: React.ReactNode; fallback: React.ReactNode; onError: () => void },
   { hasError: boolean; errorMessage: string }
 > {
-  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode; onError: () => void }) {
     super(props);
     this.state = { hasError: false, errorMessage: '' };
   }
@@ -30,11 +30,13 @@ class PaywallErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error) {
-    console.log('[Paywall] PaywallErrorBoundary caught:', error?.message);
+    console.error('[Paywall] PaywallErrorBoundary componentDidCatch:', error?.message, error?.stack);
+    this.props.onError();
   }
 
   render() {
     if (this.state.hasError) {
+      console.log('[Paywall] Error boundary rendering fallback UI, error was:', this.state.errorMessage);
       return this.props.fallback;
     }
     return this.props.children;
@@ -42,9 +44,22 @@ class PaywallErrorBoundary extends React.Component<
 }
 
 export default function PaywallScreen() {
+  console.log('[Paywall] PaywallScreen mounting');
   const router = useRouter();
   const { openCustomerCenter, refreshCustomerInfo, currentOffering, isLoading } = useSubscription();
   const [nativePaywallFailed, setNativePaywallFailed] = useState(false);
+
+  useEffect(() => {
+    console.log('[Paywall] PaywallScreen mounted — isLoading:', isLoading, '| currentOffering:', currentOffering ? currentOffering.identifier : 'NULL');
+    if (currentOffering) {
+      console.log('[Paywall] currentOffering packages:', JSON.stringify(currentOffering.availablePackages.map(p => ({ id: p.identifier, product: p.product.identifier }))));
+    }
+  }, [isLoading, currentOffering]);
+
+  const handleNativePaywallError = useCallback(() => {
+    console.log('[Paywall] onError callback fired — setting nativePaywallFailed=true');
+    setNativePaywallFailed(true);
+  }, []);
 
   const handleDismiss = useCallback(() => {
     console.log('[Paywall] User dismissed paywall');
@@ -126,7 +141,7 @@ export default function PaywallScreen() {
 
   return (
     <View style={styles.container}>
-      <PaywallErrorBoundary fallback={fallbackUI}>
+      <PaywallErrorBoundary fallback={fallbackUI} onError={handleNativePaywallError}>
         <RevenueCatUI.Paywall
           onDismiss={handleDismiss}
           onPurchaseCompleted={handlePurchaseCompleted}

@@ -37,9 +37,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
     try {
       Purchases.configure({ apiKey: API_KEY });
-      console.log('[SubscriptionContext] RevenueCat configured with key:', API_KEY);
+      console.log('[SubscriptionContext] RevenueCat configured successfully with key:', API_KEY);
     } catch (e) {
       console.error('[SubscriptionContext] Failed to configure RevenueCat:', e);
+      setIsLoading(false);
+      return;
     }
 
     loadData();
@@ -53,8 +55,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         Purchases.getOfferings(),
       ]);
 
-      console.log('[SubscriptionContext] Customer info loaded, active entitlements:', Object.keys(info.entitlements.active));
-      console.log('[SubscriptionContext] Offerings loaded, current:', offerings.current?.identifier);
+      console.log('[SubscriptionContext] Customer info loaded');
+      console.log('[SubscriptionContext] Active entitlements:', JSON.stringify(info.entitlements.active));
+      console.log('[SubscriptionContext] All offerings:', JSON.stringify(offerings.all));
+      console.log('[SubscriptionContext] Current offering:', offerings.current ? offerings.current.identifier : 'NULL — no current offering set in dashboard');
+      console.log('[SubscriptionContext] Current offering packages:', offerings.current ? JSON.stringify(offerings.current.availablePackages.map(p => ({ id: p.identifier, product: p.product.identifier }))) : 'N/A');
 
       updateSubscriptionState(info);
       setCurrentOffering(offerings.current);
