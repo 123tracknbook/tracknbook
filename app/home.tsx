@@ -192,13 +192,6 @@ export default function HomeScreen() {
             dataDetectorTypes={'none'}
             textZoom={100}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-            onNavigationStateChange={(navState) => {
-              const url = navState.url;
-              if (url.includes('/plans')) {
-                console.log('[WebView] onNavigationStateChange intercepted paywall URL:', url);
-                router.push('/paywall');
-              }
-            }}
             onMessage={handleMessage}
           />
         )}

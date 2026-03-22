@@ -4,7 +4,7 @@ import Purchases, { CustomerInfo, PurchasesOffering } from 'react-native-purchas
 import RevenueCatUI, { presentCustomerCenter } from 'react-native-purchases-ui';
 
 const API_KEY = 'appl_VvUEhtaTtsgThAClFhpGuUaFcdc';
-const ENTITLEMENT_ID = 'TracknBook Pro';
+const ENTITLEMENT_ID = 'pro';
 
 interface SubscriptionContextType {
   isSubscribed: boolean;
