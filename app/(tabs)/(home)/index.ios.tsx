@@ -1,11 +1,124 @@
 
 import { WebView } from "react-native-webview";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useTheme } from "@react-navigation/native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { StyleSheet, View, ActivityIndicator, Text } from "react-native";
 
 const webAppUrl = "https://www.tracknbook.app";
+
+// JS injected before page content loads — intercepts SPA navigation to /plans
+const injectedJavaScriptBeforeContentLoaded = `
+(function() {
+  console.log('[WebView-JS] injectedJavaScriptBeforeContentLoaded running (iOS)');
+
+  function checkAndPostPlans(url) {
+    if (url && url.includes('/plans')) {
+      console.log('[WebView-JS] /plans URL detected (iOS), posting INTERCEPT_URL:', url);
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'INTERCEPT_URL', url: url }));
+      } catch(e) {
+        console.log('[WebView-JS] postMessage failed (iOS):', e);
+      }
+    }
+  }
+
+  // Patch history API for SPA navigation
+  var _origPushState = history.pushState;
+  var _origReplaceState = history.replaceState;
+
+  history.pushState = function() {
+    _origPushState.apply(this, arguments);
+    console.log('[WebView-JS] history.pushState (iOS), new URL:', window.location.href);
+    checkAndPostPlans(window.location.href);
+  };
+
+  history.replaceState = function() {
+    _origReplaceState.apply(this, arguments);
+    console.log('[WebView-JS] history.replaceState (iOS), new URL:', window.location.href);
+    checkAndPostPlans(window.location.href);
+  };
+
+  window.addEventListener('popstate', function() {
+    console.log('[WebView-JS] popstate (iOS), URL:', window.location.href);
+    checkAndPostPlans(window.location.href);
+  });
+
+  // Polling fallback every 500ms
+  var _lastUrl = window.location.href;
+  setInterval(function() {
+    var currentUrl = window.location.href;
+    if (currentUrl !== _lastUrl) {
+      console.log('[WebView-JS] URL changed (poll, iOS):', _lastUrl, '->', currentUrl);
+      _lastUrl = currentUrl;
+      checkAndPostPlans(currentUrl);
+    }
+  }, 500);
+
+  // Intercept "Change Plan" / "Upgrade" button clicks
+  function interceptPlanButtons() {
+    var elements = document.querySelectorAll('a[href*="/plans"], a[href*="plan"], button');
+    elements.forEach(function(el) {
+      var text = (el.textContent || '').trim().toLowerCase();
+      var href = el.getAttribute('href') || '';
+      var isPlansLink = href.includes('/plans');
+      var isPlanButton = text.includes('change plan') || text.includes('upgrade') || text.includes('get pro') || text.includes('subscribe');
+      if ((isPlansLink || isPlanButton) && !el.dataset.nativeIntercepted) {
+        el.dataset.nativeIntercepted = 'true';
+        console.log('[WebView-JS] Intercepting plan button/link (iOS):', text || href);
+        el.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[WebView-JS] Plan button clicked (iOS), posting OPEN_PAYWALL');
+          try {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+          } catch(err) {
+            console.log('[WebView-JS] postMessage failed on click (iOS):', err);
+          }
+        }, true);
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('[WebView-JS] DOMContentLoaded (iOS) — running interceptPlanButtons');
+    interceptPlanButtons();
+    var observer = new MutationObserver(function() { interceptPlanButtons(); });
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+
+  if (document.readyState !== 'loading') {
+    console.log('[WebView-JS] DOM already ready (iOS) — running interceptPlanButtons immediately');
+    interceptPlanButtons();
+  }
+
+  // Check current URL immediately in case we loaded directly on /plans
+  checkAndPostPlans(window.location.href);
+})();
+true;
+`;
+
+// JS injected after page loads — tag inputs for autofill
+const injectedJavaScript = `
+(function() {
+  function tagInputs() {
+    var emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"], input[placeholder*="email" i]');
+    var passwordInputs = document.querySelectorAll('input[type="password"]');
+    emailInputs.forEach(function(el) {
+      el.setAttribute('autocomplete', 'username');
+      el.setAttribute('name', el.getAttribute('name') || 'username');
+    });
+    passwordInputs.forEach(function(el) {
+      el.setAttribute('autocomplete', 'current-password');
+      el.setAttribute('name', el.getAttribute('name') || 'password');
+    });
+  }
+  tagInputs();
+  var observer = new MutationObserver(tagInputs);
+  observer.observe(document.body, { childList: true, subtree: true });
+})();
+true;
+`;
 
 const styles = StyleSheet.create({
   container: {
@@ -19,12 +132,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     zIndex: 10,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
+    color: '#fff',
   },
   errorContainer: {
     flex: 1,
@@ -51,30 +165,58 @@ const styles = StyleSheet.create({
 });
 
 export default function HomeScreen() {
-  console.log('HomeScreen rendering (iOS)');
+  console.log('[HomeScreen] rendering (iOS)');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
+  const router = useRouter();
+  const webViewRef = useRef<WebView>(null);
 
   useEffect(() => {
-    console.log('HomeScreen mounted (iOS) - WebView URL:', webAppUrl);
+    console.log('[HomeScreen] mounted (iOS) - WebView URL:', webAppUrl);
   }, []);
 
-  const handleLoadEnd = () => {
-    console.log('WebView finished loading TrackNBook (iOS)');
-    setLoading(false);
-    setError(null);
+  const handleMessage = (event: any) => {
+    const raw = event.nativeEvent.data;
+    console.log('[HomeScreen] onMessage received (iOS) raw:', raw);
+    try {
+      const data = JSON.parse(raw);
+      console.log('[HomeScreen] onMessage parsed (iOS) type:', data.type, data.url ? '| url: ' + data.url : '');
+      if (data.type === 'INTERCEPT_URL' || data.type === 'OPEN_PAYWALL') {
+        console.log('[HomeScreen] Paywall trigger (iOS) — calling router.push("/paywall")');
+        router.push('/paywall');
+      }
+    } catch (e) {
+      console.log('[HomeScreen] onMessage JSON parse failed (iOS), raw was:', raw);
+    }
+  };
+
+  const handleShouldStartLoadWithRequest = (request: any) => {
+    const url = request.url;
+    console.log('[HomeScreen] onShouldStartLoadWithRequest (iOS):', url);
+    if (url.includes('/plans')) {
+      console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest (iOS) — pushing paywall');
+      router.push('/paywall');
+      return false;
+    }
+    return true;
   };
 
   const handleLoadStart = () => {
-    console.log('WebView started loading TrackNBook (iOS)');
+    console.log('[HomeScreen] WebView load started (iOS)');
     setLoading(true);
+    setError(null);
+  };
+
+  const handleLoadEnd = () => {
+    console.log('[HomeScreen] WebView load ended (iOS)');
+    setLoading(false);
     setError(null);
   };
 
   const handleError = (syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
-    console.error('WebView Error (iOS):', JSON.stringify(nativeEvent, null, 2));
+    console.error('[HomeScreen] WebView error (iOS):', JSON.stringify(nativeEvent, null, 2));
     const errorMessage = nativeEvent.description || nativeEvent.code || 'Unknown error';
     setError(`Failed to load: ${errorMessage}`);
     setLoading(false);
@@ -82,31 +224,16 @@ export default function HomeScreen() {
 
   const handleHttpError = (syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
-    console.error('WebView HTTP Error (iOS):', JSON.stringify(nativeEvent, null, 2));
-    const statusCode = nativeEvent.statusCode || 'Unknown';
-    const url = nativeEvent.url || webAppUrl;
-    setError(`HTTP Error ${statusCode} while loading ${url}`);
+    console.error('[HomeScreen] WebView HTTP error (iOS):', nativeEvent.statusCode, nativeEvent.url);
     setLoading(false);
   };
 
-  const handleShouldStartLoadWithRequest = (request: any) => {
-    console.log('WebView navigation request (iOS):', request.url);
-    return true;
-  };
-
-  const loadingTextColor = colors.text;
   const errorTextColor = colors.text;
 
-  console.log('HomeScreen rendering (iOS) - loading:', loading, 'error:', error);
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
-      
+    <View style={[styles.container, { backgroundColor: '#000' }]}>
+      <Stack.Screen options={{ headerShown: false }} />
+
       {error ? (
         <View style={styles.errorContainer}>
           <Text style={[styles.errorTitle, { color: errorTextColor }]}>
@@ -122,36 +249,39 @@ export default function HomeScreen() {
       ) : (
         <>
           <WebView
+            ref={webViewRef}
             source={{ uri: webAppUrl }}
             onLoadStart={handleLoadStart}
             onLoadEnd={handleLoadEnd}
             onError={handleError}
             onHttpError={handleHttpError}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-            startInLoadingState={true}
+            onMessage={handleMessage}
+            injectedJavaScriptBeforeContentLoaded={injectedJavaScriptBeforeContentLoaded}
+            injectedJavaScript={injectedJavaScript}
+            startInLoadingState={false}
             originWhitelist={['*']}
             cacheEnabled={true}
-            cacheMode="LOAD_DEFAULT"
             sharedCookiesEnabled={true}
-            allowFileAccess={true}
-            allowUniversalAccessFromFileURLs={true}
             javaScriptEnabled={true}
             domStorageEnabled={true}
             mediaPlaybackRequiresUserAction={false}
             allowsInlineMediaPlayback={true}
             allowsFullscreenVideo={true}
             allowsBackForwardNavigationGestures={true}
-            allowFileAccessFromFileURLs={true}
             geolocationEnabled={true}
-            allowsLinkPreview={true}
             style={styles.container}
             setSupportMultipleWindows={false}
+            autoManageStatusBarEnabled={false}
+            textZoom={100}
+            dataDetectorTypes={'none'}
+            contentMode="mobile"
           />
 
           {loading && (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.loadingText, { color: loadingTextColor }]}>
+              <ActivityIndicator size="large" color="#5B5BFF" />
+              <Text style={styles.loadingText}>
                 Loading TrackNBook...
               </Text>
             </View>
