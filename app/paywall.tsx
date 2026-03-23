@@ -107,10 +107,8 @@ export default function PaywallScreen() {
     await refreshCustomerInfo();
     console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing');
     setPendingWebViewUrl('/settings?tab=billing');
-    setTimeout(() => {
-      console.log('[Paywall] Navigating to home tab after purchase');
-      router.replace('/(tabs)/(home)');
-    }, 800);
+    console.log('[Paywall] Navigating to home tab after purchase (delay handled by WebView side)');
+    router.replace('/(tabs)/(home)');
   }, [router, refreshCustomerInfo]);
 
   const handleRestoreCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
@@ -118,10 +116,8 @@ export default function PaywallScreen() {
     await refreshCustomerInfo();
     console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing');
     setPendingWebViewUrl('/settings?tab=billing');
-    setTimeout(() => {
-      console.log('[Paywall] Navigating to home tab after restore');
-      router.replace('/(tabs)/(home)');
-    }, 800);
+    console.log('[Paywall] Navigating to home tab after restore (delay handled by WebView side)');
+    router.replace('/(tabs)/(home)');
   }, [router, refreshCustomerInfo]);
 
   const handlePurchaseError = useCallback(({ error }: { error: PurchasesError }) => {
