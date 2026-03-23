@@ -7,9 +7,10 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import Purchases, { PurchasesOffering } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
 import type { CustomerInfo } from 'react-native-purchases';
 import type { PurchasesError } from 'react-native-purchases';
@@ -46,15 +47,49 @@ class PaywallErrorBoundary extends React.Component<
 export default function PaywallScreen() {
   console.log('[Paywall] PaywallScreen mounting');
   const router = useRouter();
+  const { offeringId } = useLocalSearchParams<{ offeringId?: string }>();
   const { openCustomerCenter, refreshCustomerInfo, currentOffering, isLoading } = useSubscription();
   const [nativePaywallFailed, setNativePaywallFailed] = useState(false);
+  const [resolvedOffering, setResolvedOffering] = useState<PurchasesOffering | null>(null);
+  const [offeringLoading, setOfferingLoading] = useState(!!offeringId);
 
   useEffect(() => {
-    console.log('[Paywall] PaywallScreen mounted — isLoading:', isLoading, '| currentOffering:', currentOffering ? currentOffering.identifier : 'NULL');
-    if (currentOffering) {
-      console.log('[Paywall] currentOffering packages:', JSON.stringify(currentOffering.availablePackages.map(p => ({ id: p.identifier, product: p.product.identifier }))));
+    console.log('[Paywall] PaywallScreen mounted — offeringId param:', offeringId ?? 'none (using default)');
+    if (!offeringId) {
+      console.log('[Paywall] No offeringId param — falling back to default offering from context');
+      setOfferingLoading(false);
+      return;
     }
-  }, [isLoading, currentOffering]);
+    if (Platform.OS === 'web') {
+      setOfferingLoading(false);
+      return;
+    }
+    console.log('[Paywall] Fetching offerings to resolve offeringId:', offeringId);
+    Purchases.getOfferings()
+      .then((offerings) => {
+        const match = offerings.all[offeringId] ?? null;
+        console.log('[Paywall] Resolved offering for id "' + offeringId + '":', match ? match.identifier : 'NOT FOUND — falling back to default');
+        if (match) {
+          console.log('[Paywall] Offering packages:', JSON.stringify(match.availablePackages.map(p => ({ id: p.identifier, product: p.product.identifier }))));
+        }
+        setResolvedOffering(match);
+      })
+      .catch((e) => {
+        console.error('[Paywall] Failed to fetch offerings for id "' + offeringId + '":', e);
+      })
+      .finally(() => {
+        setOfferingLoading(false);
+      });
+  }, [offeringId]);
+
+  useEffect(() => {
+    if (!offeringId) {
+      console.log('[Paywall] Context offering — isLoading:', isLoading, '| currentOffering:', currentOffering ? currentOffering.identifier : 'NULL');
+      if (currentOffering) {
+        console.log('[Paywall] currentOffering packages:', JSON.stringify(currentOffering.availablePackages.map(p => ({ id: p.identifier, product: p.product.identifier }))));
+      }
+    }
+  }, [isLoading, currentOffering, offeringId]);
 
   const handleNativePaywallError = useCallback(() => {
     console.log('[Paywall] onError callback fired — setting nativePaywallFailed=true');
@@ -104,9 +139,9 @@ export default function PaywallScreen() {
     );
   }
 
-  // Loading state while RevenueCat initialises
-  if (isLoading) {
-    console.log('[Paywall] Showing loading state while RevenueCat initialises');
+  // Loading state while RevenueCat initialises or specific offering is being fetched
+  if (isLoading || offeringLoading) {
+    console.log('[Paywall] Showing loading state — isLoading:', isLoading, '| offeringLoading:', offeringLoading);
     return (
       <SafeAreaView style={styles.fallbackContainer}>
         <ActivityIndicator size="large" color="#5B5BFF" />
@@ -118,12 +153,15 @@ export default function PaywallScreen() {
     );
   }
 
+  // The offering to display: prefer the resolved specific offering, fall back to context default
+  const activeOffering = resolvedOffering ?? currentOffering;
+
   // Fallback shown when native module is unavailable (Expo Go) or no offering is configured
   const fallbackUI = (
     <SafeAreaView style={styles.fallbackContainer}>
       <Text style={styles.fallbackTitle}>TracknBook Pro</Text>
       <Text style={styles.fallbackSubtitle}>
-        {currentOffering
+        {activeOffering
           ? 'Unlock all features with a Pro subscription.'
           : 'No subscription plans are configured yet.\nCheck your RevenueCat dashboard.'}
       </Text>
@@ -143,6 +181,7 @@ export default function PaywallScreen() {
     <View style={styles.container}>
       <PaywallErrorBoundary fallback={fallbackUI} onError={handleNativePaywallError}>
         <RevenueCatUI.Paywall
+          offering={activeOffering ?? undefined}
           onDismiss={handleDismiss}
           onPurchaseCompleted={handlePurchaseCompleted}
           onRestoreCompleted={handleRestoreCompleted}

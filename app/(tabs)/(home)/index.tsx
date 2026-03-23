@@ -238,9 +238,12 @@ export default function HomeScreen() {
     try {
       const data = JSON.parse(raw);
       console.log('[HomeScreen] onMessage parsed type:', data.type, data.url ? '| url: ' + data.url : '');
-      if (data.type === 'INTERCEPT_URL' || data.type === 'OPEN_PAYWALL') {
-        console.log('[HomeScreen] Paywall trigger — calling router.push("/paywall")');
-        router.push('/paywall');
+      if (data.type === 'INTERCEPT_URL') {
+        console.log('[HomeScreen] INTERCEPT_URL — pushing subscriptions paywall');
+        router.push('/paywall?offeringId=subscriptions');
+      } else if (data.type === 'OPEN_PAYWALL') {
+        console.log('[HomeScreen] OPEN_PAYWALL — pushing Bolt ons paywall');
+        router.push('/paywall?offeringId=Bolt%20ons');
       }
     } catch (e) {
       console.log('[HomeScreen] onMessage JSON parse failed, raw was:', raw);
@@ -251,13 +254,13 @@ export default function HomeScreen() {
     const url = request.url;
     console.log('[HomeScreen] onShouldStartLoadWithRequest:', url);
     if (url.includes('/plans')) {
-      console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest — pushing paywall');
-      router.push('/paywall');
+      console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest — pushing subscriptions paywall');
+      router.push('/paywall?offeringId=subscriptions');
       return false;
     }
     if (url.includes('vehicle-check') || url.includes('bolt-on') || url.includes('addon')) {
-      console.log('[HomeScreen] Vehicle check / bolt-on URL intercepted via onShouldStartLoadWithRequest — pushing paywall:', url);
-      router.push('/paywall');
+      console.log('[HomeScreen] Vehicle check / bolt-on URL intercepted via onShouldStartLoadWithRequest — pushing Bolt ons paywall:', url);
+      router.push('/paywall?offeringId=Bolt%20ons');
       return false;
     }
     return true;
