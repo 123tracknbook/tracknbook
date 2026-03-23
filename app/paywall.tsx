@@ -105,18 +105,18 @@ export default function PaywallScreen() {
   const handlePurchaseCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
     console.log('[Paywall] Purchase completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
     await refreshCustomerInfo();
-    console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing');
-    setPendingWebViewUrl('/settings?tab=billing');
-    console.log('[Paywall] Navigating to home tab after purchase (delay handled by WebView side)');
+    console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
+    setPendingWebViewUrl('/settings?tab=billing&purchase=1');
+    console.log('[Paywall] Navigating to home tab after purchase');
     router.replace('/(tabs)/(home)');
   }, [router, refreshCustomerInfo]);
 
   const handleRestoreCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
     console.log('[Paywall] Restore completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
     await refreshCustomerInfo();
-    console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing');
-    setPendingWebViewUrl('/settings?tab=billing');
-    console.log('[Paywall] Navigating to home tab after restore (delay handled by WebView side)');
+    console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
+    setPendingWebViewUrl('/settings?tab=billing&purchase=1');
+    console.log('[Paywall] Navigating to home tab after restore');
     router.replace('/(tabs)/(home)');
   }, [router, refreshCustomerInfo]);
 

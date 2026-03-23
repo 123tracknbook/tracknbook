@@ -262,19 +262,14 @@ export default function HomeScreen() {
   }, []);
 
   // When the home screen comes into focus (e.g. after returning from paywall),
-  // wait 3000ms before injecting the pending URL so the RevenueCat webhook has
-  // time to update the Supabase database before the billing page loads.
+  // inject the pending URL immediately — the web app handles polling via ?purchase=1.
   useFocusEffect(
     useCallback(() => {
       if (pendingWebViewUrl) {
         const url = pendingWebViewUrl;
-        console.log('[HomeScreen] useFocusEffect — pendingWebViewUrl detected:', url, '— waiting 3000ms before injecting');
+        console.log('[HomeScreen] useFocusEffect — pendingWebViewUrl detected:', url, '— injecting immediately');
         setPendingWebViewUrl(null);
-        const timer = setTimeout(() => {
-          console.log('[HomeScreen] useFocusEffect — 3000ms elapsed, injecting URL:', url);
-          webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
-        }, 3000);
-        return () => clearTimeout(timer);
+        webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
       }
     }, [])
   );
@@ -336,16 +331,12 @@ export default function HomeScreen() {
     console.log('[HomeScreen] WebView load ended');
     setLoading(false);
     setError(null);
-    // Inject any pending URL that was set before the WebView was ready,
-    // with a 3000ms delay to allow the RevenueCat webhook to update Supabase.
+    // Inject any pending URL immediately — the web app handles polling via ?purchase=1.
     if (pendingWebViewUrl) {
       const url = pendingWebViewUrl;
-      console.log('[HomeScreen] onLoadEnd — pendingWebViewUrl detected:', url, '— waiting 3000ms before injecting');
+      console.log('[HomeScreen] onLoadEnd — pendingWebViewUrl detected:', url, '— injecting immediately');
       setPendingWebViewUrl(null);
-      setTimeout(() => {
-        console.log('[HomeScreen] onLoadEnd — 3000ms elapsed, injecting URL:', url);
-        webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
-      }, 3000);
+      webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
   };
 

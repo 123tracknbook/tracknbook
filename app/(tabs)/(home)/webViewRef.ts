@@ -6,6 +6,7 @@ export const webViewRef = React.createRef<WebView>();
 
 // Pending URL to navigate to once the WebView is visible and loaded
 export let pendingWebViewUrl: string | null = null;
+// Default post-purchase destination — web app polls for subscription status via ?purchase=1
 export function setPendingWebViewUrl(url: string | null) {
   pendingWebViewUrl = url;
 }
