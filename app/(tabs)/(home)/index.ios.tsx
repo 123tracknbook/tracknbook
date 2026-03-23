@@ -124,15 +124,47 @@ const injectedJavaScript = `
   // --- Supabase auth bridge ---
   // Token shape: { access_token, refresh_token, user: { id } }
   // or sometimes: { session: { user: { id } } }
+
+  function debugStorageDump() {
+    try {
+      // 1. localStorage
+      var lsKeys = [];
+      for (var i = 0; i < localStorage.length; i++) { lsKeys.push(localStorage.key(i)); }
+
+      // 2. sessionStorage
+      var ssKeys = [];
+      for (var i = 0; i < sessionStorage.length; i++) { ssKeys.push(sessionStorage.key(i)); }
+
+      // 3. cookies
+      var cookies = document.cookie;
+
+      // 4. Check if window.supabase exists
+      var hasSupabase = !!(window.supabase || window.__supabase || window._supabase);
+
+      // 5. Check for any global variable that might be the supabase client
+      var globalKeys = Object.keys(window).filter(function(k) {
+        try { return k.toLowerCase().includes('supa') || k.toLowerCase().includes('auth'); } catch(e) { return false; }
+      });
+
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'DEBUG_STORAGE',
+        localStorage: lsKeys,
+        sessionStorage: ssKeys,
+        cookies: cookies.substring(0, 500),
+        hasSupabase: hasSupabase,
+        supabaseGlobals: globalKeys,
+        url: window.location.href
+      }));
+    } catch(e) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG_STORAGE_ERROR', error: String(e) }));
+    }
+  }
+
+  debugStorageDump();
+  setTimeout(debugStorageDump, 2000);
+
   function getSupabaseUserId() {
     try {
-      // DEBUG: dump all localStorage keys
-      var allKeys = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        allKeys.push(localStorage.key(i));
-      }
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG_LOCALSTORAGE', keys: allKeys }));
-    } catch(e) {}
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
@@ -280,8 +312,8 @@ export default function HomeScreen() {
     try {
       const data = JSON.parse(raw);
       console.log('[HomeScreen] onMessage parsed (iOS) type:', data.type, data.url ? '| url: ' + data.url : '');
-      if (data.type === 'DEBUG_LOCALSTORAGE') {
-        console.log('[RevenueCat Debug] localStorage keys:', JSON.stringify(data.keys));
+      if (data.type === 'DEBUG_STORAGE' || data.type === 'DEBUG_STORAGE_ERROR') {
+        console.log('[Auth Debug]', JSON.stringify(data, null, 2));
         return;
       }
       if (data.type === 'INTERCEPT_URL' || data.type === 'OPEN_PAYWALL') {
