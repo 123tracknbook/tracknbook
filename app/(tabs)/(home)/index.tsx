@@ -3,7 +3,9 @@ import { WebView } from "react-native-webview";
 import { Stack, useRouter } from "expo-router";
 import { StyleSheet, View, ActivityIndicator, Platform, Text } from "react-native";
 import { useTheme } from "@react-navigation/native";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import Purchases from "react-native-purchases";
+import { webViewRef } from "./webViewRef";
 
 const webAppUrl = "https://www.tracknbook.app";
 
@@ -103,9 +105,10 @@ const injectedJavaScriptBeforeContentLoaded = `
 true;
 `;
 
-// JS injected after page loads — tag inputs for autofill
+// JS injected after page loads — tag inputs for autofill + Supabase auth bridge
 const injectedJavaScript = `
 (function() {
+  // --- Input autofill tagging ---
   function tagInputs() {
     var emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"], input[placeholder*="email" i]');
     var passwordInputs = document.querySelectorAll('input[type="password"]');
@@ -119,8 +122,85 @@ const injectedJavaScript = `
     });
   }
   tagInputs();
-  var observer = new MutationObserver(tagInputs);
-  observer.observe(document.body, { childList: true, subtree: true });
+  var _inputObserver = new MutationObserver(tagInputs);
+  _inputObserver.observe(document.body, { childList: true, subtree: true });
+
+  // --- Supabase auth bridge ---
+  // Extracts user.id from the Supabase localStorage token.
+  // Token shape: { access_token, refresh_token, user: { id } }
+  // or sometimes: { session: { user: { id } } }
+  function getSupabaseUserId() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          var raw = localStorage.getItem(key);
+          if (!raw) continue;
+          var parsed = JSON.parse(raw);
+          // Shape 1: { user: { id } }
+          if (parsed && parsed.user && parsed.user.id) {
+            return parsed.user.id;
+          }
+          // Shape 2: { session: { user: { id } } }
+          if (parsed && parsed.session && parsed.session.user && parsed.session.user.id) {
+            return parsed.session.user.id;
+          }
+        }
+      }
+    } catch(e) {
+      console.log('[WebView-JS] getSupabaseUserId error:', e);
+    }
+    return null;
+  }
+
+  var _lastAuthUserId = null;
+
+  function checkAuthState() {
+    var userId = getSupabaseUserId();
+    if (userId !== _lastAuthUserId) {
+      console.log('[WebView-JS] Auth state changed — prev:', _lastAuthUserId, '| next:', userId);
+      try {
+        if (userId) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SIGNED_IN', userId: userId }));
+        } else if (_lastAuthUserId) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SIGNED_OUT' }));
+        }
+      } catch(e) {}
+      _lastAuthUserId = userId;
+    }
+  }
+
+  // 1. Hook window.supabase.auth.onAuthStateChange if the app exposes the client
+  (function trySupabaseHook() {
+    try {
+      var sb = window.supabase || window.__supabase || null;
+      if (sb && sb.auth && typeof sb.auth.onAuthStateChange === 'function') {
+        console.log('[WebView-JS] Hooking window.supabase.auth.onAuthStateChange');
+        sb.auth.onAuthStateChange(function(event, session) {
+          console.log('[WebView-JS] onAuthStateChange event:', event, '| userId:', session && session.user ? session.user.id : 'none');
+          try {
+            if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session && session.user && session.user.id) {
+              _lastAuthUserId = session.user.id;
+              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SIGNED_IN', userId: session.user.id }));
+            } else if (event === 'SIGNED_OUT') {
+              _lastAuthUserId = null;
+              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SIGNED_OUT' }));
+            }
+          } catch(e) {}
+        });
+        return;
+      }
+    } catch(e) {}
+    // Supabase client not yet available — will rely on localStorage polling below
+    console.log('[WebView-JS] window.supabase not found, falling back to localStorage polling');
+  })();
+
+  // 2. Poll localStorage every 500ms as a reliable fallback
+  // (covers cases where the Supabase client is not exposed on window)
+  setInterval(checkAuthState, 500);
+
+  // Run once immediately in case user is already signed in
+  checkAuthState();
 })();
 true;
 `;
@@ -175,13 +255,12 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
   const router = useRouter();
-  const webViewRef = useRef<WebView>(null);
 
   useEffect(() => {
     console.log('[HomeScreen] mounted - WebView URL:', webAppUrl);
   }, []);
 
-  const handleMessage = (event: any) => {
+  const handleMessage = async (event: any) => {
     const raw = event.nativeEvent.data;
     console.log('[HomeScreen] onMessage received raw:', raw);
     try {
@@ -190,6 +269,27 @@ export default function HomeScreen() {
       if (data.type === 'INTERCEPT_URL') {
         console.log('[HomeScreen] INTERCEPT_URL — pushing subscriptions paywall');
         router.push('/paywall?offeringId=subscriptions');
+        return;
+      }
+      if (data.type === 'AUTH_SIGNED_IN' && data.userId) {
+        console.log('[HomeScreen] AUTH_SIGNED_IN — calling Purchases.logIn with userId:', data.userId);
+        try {
+          const result = await Purchases.logIn(data.userId);
+          console.log('[RevenueCat] logIn succeeded, created:', result.created, '| userId:', data.userId);
+        } catch (e) {
+          console.warn('[RevenueCat] logIn failed (non-fatal):', e);
+        }
+        return;
+      }
+      if (data.type === 'AUTH_SIGNED_OUT') {
+        console.log('[HomeScreen] AUTH_SIGNED_OUT — calling Purchases.logOut');
+        try {
+          await Purchases.logOut();
+          console.log('[RevenueCat] logOut succeeded');
+        } catch (e) {
+          console.warn('[RevenueCat] logOut failed (non-fatal):', e);
+        }
+        return;
       }
     } catch (e) {
       console.log('[HomeScreen] onMessage JSON parse failed, raw was:', raw);
@@ -254,7 +354,7 @@ export default function HomeScreen() {
       ) : (
         <>
           <WebView
-            ref={webViewRef}
+            ref={webViewRef as React.RefObject<WebView>}
             source={{ uri: webAppUrl }}
             onLoadStart={handleLoadStart}
             onLoadEnd={handleLoadEnd}
