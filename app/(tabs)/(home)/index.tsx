@@ -81,7 +81,7 @@ const injectedJavaScriptBeforeContentLoaded = `
     var href = (el.getAttribute && el.getAttribute('href')) || '';
     var className = (el.className && typeof el.className === 'string' ? el.className : '').toLowerCase();
     var id = (el.id || '').toLowerCase();
-    var textMatch = text.includes('vehicle check') || text.includes('vehicle-check') || (text.includes('bolt') && text.includes('on')) || text.includes('bolt-on') || text.includes('addon') || text.includes('add-on');
+    var textMatch = text.includes('vehicle check') || text.includes('vehicle-check') || text.includes('bolt-on') || /\bbolt on\b/.test(text) || text.includes('addon') || text.includes('add-on');
     var hrefMatch = href.includes('vehicle-check') || href.includes('bolt-on') || href.includes('addon');
     var attrMatch = className.includes('vehicle') || className.includes('bolt') || id.includes('vehicle') || id.includes('bolt');
     return textMatch || hrefMatch || attrMatch;
@@ -102,11 +102,20 @@ const injectedJavaScriptBeforeContentLoaded = `
         el.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
-          console.log('[WebView-JS] Button clicked, posting OPEN_PAYWALL | text:', text, '| href:', href);
-          try {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
-          } catch(err) {
-            console.log('[WebView-JS] postMessage failed on click:', err);
+          if (isVehicleCheck) {
+            console.log('[WebView-JS] Button clicked (vehicle check / bolt-on), posting OPEN_PAYWALL | text:', text, '| href:', href);
+            try {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+            } catch(err) {
+              console.log('[WebView-JS] postMessage failed on click:', err);
+            }
+          } else {
+            console.log('[WebView-JS] Button clicked (plan / subscribe), posting INTERCEPT_URL | text:', text, '| href:', href);
+            try {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'INTERCEPT_URL', url: href }));
+            } catch(err) {
+              console.log('[WebView-JS] postMessage failed on click:', err);
+            }
           }
         }, true);
       }
