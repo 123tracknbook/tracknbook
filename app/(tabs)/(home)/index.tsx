@@ -160,6 +160,82 @@ const injectedJavaScriptBeforeContentLoaded = `
 
   // Check current URL immediately in case we loaded directly on /plans or vehicle-check
   checkUrl(window.location.href);
+
+  // Intercept fetch calls that redirect to Stripe
+  var _origFetch = window.fetch;
+  window.fetch = function() {
+    var args = arguments;
+    var url = (args[0] && typeof args[0] === 'string') ? args[0] : (args[0] && args[0].url) ? args[0].url : '';
+    return _origFetch.apply(this, args).then(function(response) {
+      // If the response redirected to Stripe, intercept it
+      if (response.url && response.url.includes('stripe.com')) {
+        console.log('[WebView-JS] fetch response redirected to Stripe:', response.url);
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+        } catch(e) {}
+      }
+      return response;
+    });
+  };
+
+  // Intercept XMLHttpRequest responses that redirect to Stripe
+  var _origXHROpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(method, url) {
+    this._nativeUrl = url;
+    return _origXHROpen.apply(this, arguments);
+  };
+  var _origXHRSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function() {
+    var xhr = this;
+    xhr.addEventListener('load', function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        if (data && data.url && data.url.includes('stripe.com')) {
+          console.log('[WebView-JS] XHR response contains Stripe URL:', data.url);
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+        }
+        if (data && data.checkoutUrl && data.checkoutUrl.includes('stripe.com')) {
+          console.log('[WebView-JS] XHR response contains Stripe checkoutUrl:', data.checkoutUrl);
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+        }
+      } catch(e) {}
+    });
+    return _origXHRSend.apply(this, arguments);
+  };
+
+  // Intercept form submissions that go to Stripe
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    var action = (form && form.action) || '';
+    if (action.includes('stripe.com')) {
+      console.log('[WebView-JS] Form submit to Stripe intercepted:', action);
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+      } catch(err) {}
+    }
+  }, true);
+
+  // Intercept window.location assignments to Stripe
+  try {
+    var _locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
+    if (!_locationDescriptor || _locationDescriptor.configurable) {
+      var _origAssign = window.location.assign.bind(window.location);
+      window.location.assign = function(url) {
+        if (url && url.includes('stripe.com')) {
+          console.log('[WebView-JS] window.location.assign to Stripe intercepted:', url);
+          try {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+          } catch(e) {}
+          return;
+        }
+        return _origAssign(url);
+      };
+    }
+  } catch(e) {
+    console.log('[WebView-JS] Could not patch window.location.assign:', e);
+  }
 })();
 true;
 `;
@@ -263,7 +339,7 @@ export default function HomeScreen() {
   const handleShouldStartLoadWithRequest = (request: any) => {
     const url = request.url;
     console.log('[HomeScreen] onShouldStartLoadWithRequest:', url);
-    if (url.includes('checkout.stripe.com') || url.includes('stripe.com/checkout') || (url.includes('stripe.com') && url.includes('pay'))) {
+    if (url.includes('stripe.com')) {
       console.log('[HomeScreen] Stripe checkout URL intercepted — pushing Bolt ons paywall:', url);
       router.push('/paywall?offeringId=Bolt%20ons');
       return false;
