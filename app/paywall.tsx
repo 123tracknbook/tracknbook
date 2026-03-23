@@ -54,7 +54,7 @@ export default function PaywallScreen() {
   console.log('[Paywall] PaywallScreen mounting');
   const router = useRouter();
   const { offeringId } = useLocalSearchParams<{ offeringId?: string }>();
-  const { openCustomerCenter, refreshCustomerInfo, currentOffering, isLoading } = useSubscription();
+  const { refreshCustomerInfo, currentOffering, isLoading } = useSubscription();
   const [nativePaywallFailed, setNativePaywallFailed] = useState(false);
   const [resolvedOffering, setResolvedOffering] = useState<PurchasesOffering | null>(null);
   const [offeringLoading, setOfferingLoading] = useState(!!offeringId);
@@ -133,11 +133,6 @@ export default function PaywallScreen() {
   const handlePurchaseCancelled = useCallback(() => {
     console.log('[Paywall] Purchase cancelled by user');
   }, []);
-
-  const handleManageSubscription = useCallback(async () => {
-    console.log('[Paywall] Manage Subscription / Customer Center tapped');
-    await openCustomerCenter();
-  }, [openCustomerCenter]);
 
   const handleRestorePurchases = useCallback(async () => {
     console.log('[Paywall] Restore Purchases tapped');
