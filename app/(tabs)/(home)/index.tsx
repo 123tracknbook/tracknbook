@@ -132,6 +132,14 @@ const injectedJavaScript = `
   // or sometimes: { session: { user: { id } } }
   function getSupabaseUserId() {
     try {
+      // DEBUG: dump all localStorage keys
+      var allKeys = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        allKeys.push(localStorage.key(i));
+      }
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG_LOCALSTORAGE', keys: allKeys }));
+    } catch(e) {}
+    try {
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
         if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
@@ -280,6 +288,10 @@ export default function HomeScreen() {
     try {
       const data = JSON.parse(raw);
       console.log('[HomeScreen] onMessage parsed type:', data.type, data.url ? '| url: ' + data.url : '');
+      if (data.type === 'DEBUG_LOCALSTORAGE') {
+        console.log('[RevenueCat Debug] localStorage keys:', JSON.stringify(data.keys));
+        return;
+      }
       if (data.type === 'INTERCEPT_URL') {
         console.log('[HomeScreen] INTERCEPT_URL — pushing subscriptions paywall');
         router.push('/paywall?offeringId=subscriptions');
