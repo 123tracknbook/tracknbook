@@ -7,10 +7,15 @@ import React, { useState, useEffect, useRef } from "react";
 
 const webAppUrl = "https://www.tracknbook.app";
 
-// JS injected before page content loads — intercepts SPA navigation to /plans
+// JS injected before page content loads — intercepts SPA navigation to /plans and vehicle check bolt-on
 const injectedJavaScriptBeforeContentLoaded = `
 (function() {
   console.log('[WebView-JS] injectedJavaScriptBeforeContentLoaded running');
+
+  function shouldInterceptUrl(url) {
+    if (!url) return false;
+    return url.includes('/plans') || url.includes('vehicle-check') || url.includes('bolt-on') || url.includes('addon');
+  }
 
   function checkAndPostPlans(url) {
     if (url && url.includes('/plans')) {
@@ -23,6 +28,22 @@ const injectedJavaScriptBeforeContentLoaded = `
     }
   }
 
+  function checkAndPostVehicleCheck(url) {
+    if (url && (url.includes('vehicle-check') || url.includes('bolt-on') || url.includes('addon'))) {
+      console.log('[WebView-JS] Vehicle check / bolt-on URL detected, posting OPEN_PAYWALL message:', url);
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL', url: url }));
+      } catch(e) {
+        console.log('[WebView-JS] postMessage failed:', e);
+      }
+    }
+  }
+
+  function checkUrl(url) {
+    checkAndPostPlans(url);
+    checkAndPostVehicleCheck(url);
+  }
+
   // Patch history API for SPA navigation
   var _origPushState = history.pushState;
   var _origReplaceState = history.replaceState;
@@ -30,18 +51,18 @@ const injectedJavaScriptBeforeContentLoaded = `
   history.pushState = function() {
     _origPushState.apply(this, arguments);
     console.log('[WebView-JS] history.pushState called, new URL:', window.location.href);
-    checkAndPostPlans(window.location.href);
+    checkUrl(window.location.href);
   };
 
   history.replaceState = function() {
     _origReplaceState.apply(this, arguments);
     console.log('[WebView-JS] history.replaceState called, new URL:', window.location.href);
-    checkAndPostPlans(window.location.href);
+    checkUrl(window.location.href);
   };
 
   window.addEventListener('popstate', function() {
     console.log('[WebView-JS] popstate fired, URL:', window.location.href);
-    checkAndPostPlans(window.location.href);
+    checkUrl(window.location.href);
   });
 
   // Polling fallback every 500ms for frameworks that bypass history API
@@ -51,25 +72,37 @@ const injectedJavaScriptBeforeContentLoaded = `
     if (currentUrl !== _lastUrl) {
       console.log('[WebView-JS] URL changed (poll):', _lastUrl, '->', currentUrl);
       _lastUrl = currentUrl;
-      checkAndPostPlans(currentUrl);
+      checkUrl(currentUrl);
     }
   }, 500);
 
-  // Intercept "Change Plan" / "Upgrade" button clicks
+  function isVehicleCheckElement(el) {
+    var text = (el.textContent || '').trim().toLowerCase();
+    var href = (el.getAttribute && el.getAttribute('href')) || '';
+    var className = (el.className && typeof el.className === 'string' ? el.className : '').toLowerCase();
+    var id = (el.id || '').toLowerCase();
+    var textMatch = text.includes('vehicle check') || text.includes('vehicle-check') || (text.includes('bolt') && text.includes('on')) || text.includes('bolt-on') || text.includes('addon') || text.includes('add-on');
+    var hrefMatch = href.includes('vehicle-check') || href.includes('bolt-on') || href.includes('addon');
+    var attrMatch = className.includes('vehicle') || className.includes('bolt') || id.includes('vehicle') || id.includes('bolt');
+    return textMatch || hrefMatch || attrMatch;
+  }
+
+  // Intercept "Change Plan" / "Upgrade" / "Vehicle Check" button clicks
   function interceptPlanButtons() {
-    var elements = document.querySelectorAll('a[href*="/plans"], a[href*="plan"], button');
+    var elements = document.querySelectorAll('a[href*="/plans"], a[href*="plan"], a[href*="vehicle-check"], a[href*="bolt-on"], a[href*="addon"], button');
     elements.forEach(function(el) {
       var text = (el.textContent || '').trim().toLowerCase();
       var href = el.getAttribute('href') || '';
       var isPlansLink = href.includes('/plans');
       var isPlanButton = text.includes('change plan') || text.includes('upgrade') || text.includes('get pro') || text.includes('subscribe');
-      if ((isPlansLink || isPlanButton) && !el.dataset.nativeIntercepted) {
+      var isVehicleCheck = isVehicleCheckElement(el);
+      if ((isPlansLink || isPlanButton || isVehicleCheck) && !el.dataset.nativeIntercepted) {
         el.dataset.nativeIntercepted = 'true';
-        console.log('[WebView-JS] Intercepting plan button/link:', text || href);
+        console.log('[WebView-JS] Intercepting button/link:', text || href, '| vehicleCheck:', isVehicleCheck);
         el.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
-          console.log('[WebView-JS] Plan button clicked, posting OPEN_PAYWALL');
+          console.log('[WebView-JS] Button clicked, posting OPEN_PAYWALL | text:', text, '| href:', href);
           try {
             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
           } catch(err) {
@@ -79,6 +112,29 @@ const injectedJavaScriptBeforeContentLoaded = `
       }
     });
   }
+
+  // Event delegation on document for vehicle check bolt-on clicks (catches dynamically rendered buttons)
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    // Walk up to 5 ancestors to find a matching element
+    for (var i = 0; i < 5; i++) {
+      if (!target || target === document.body) break;
+      if (isVehicleCheckElement(target)) {
+        var text = (target.textContent || '').trim().toLowerCase();
+        var href = (target.getAttribute && target.getAttribute('href')) || '';
+        console.log('[WebView-JS] Vehicle check element clicked via delegation | text:', text, '| href:', href);
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+        } catch(err) {
+          console.log('[WebView-JS] postMessage failed on delegation click:', err);
+        }
+        return;
+      }
+      target = target.parentElement;
+    }
+  }, true);
 
   document.addEventListener('DOMContentLoaded', function() {
     console.log('[WebView-JS] DOMContentLoaded — running interceptPlanButtons');
@@ -92,8 +148,8 @@ const injectedJavaScriptBeforeContentLoaded = `
     interceptPlanButtons();
   }
 
-  // Check current URL immediately in case we loaded directly on /plans
-  checkAndPostPlans(window.location.href);
+  // Check current URL immediately in case we loaded directly on /plans or vehicle-check
+  checkUrl(window.location.href);
 })();
 true;
 `;
@@ -196,6 +252,11 @@ export default function HomeScreen() {
     console.log('[HomeScreen] onShouldStartLoadWithRequest:', url);
     if (url.includes('/plans')) {
       console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest — pushing paywall');
+      router.push('/paywall');
+      return false;
+    }
+    if (url.includes('vehicle-check') || url.includes('bolt-on') || url.includes('addon')) {
+      console.log('[HomeScreen] Vehicle check / bolt-on URL intercepted via onShouldStartLoadWithRequest — pushing paywall:', url);
       router.push('/paywall');
       return false;
     }
