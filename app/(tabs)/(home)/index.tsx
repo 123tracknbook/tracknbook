@@ -183,15 +183,29 @@ const injectedJavaScriptBeforeContentLoaded = `
   var _origFetch = window.fetch;
   window.fetch = function() {
     var args = arguments;
-    var url = (args[0] && typeof args[0] === 'string') ? args[0] : (args[0] && args[0].url) ? args[0].url : '';
+    var reqUrl = '';
+    if (args[0] && typeof args[0] === 'string') reqUrl = args[0];
+    else if (args[0] && args[0].url) reqUrl = args[0].url;
     return _origFetch.apply(this, args).then(function(response) {
-      // If the response redirected to Stripe, intercept it
+      // Check if the fetch itself redirected to Stripe
       if (response.url && response.url.includes('stripe.com')) {
-        console.log('[WebView-JS] fetch response redirected to Stripe:', response.url);
-        try {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
-        } catch(e) {}
+        console.log('[WebView-JS] fetch redirected to Stripe:', response.url);
+        try { window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' })); } catch(e) {}
+        return response;
       }
+      // Clone and parse the JSON body to find a Stripe URL in any field
+      try {
+        var cloned = response.clone();
+        cloned.json().then(function(data) {
+          if (!data) return;
+          // Check all common field names the edge function might return
+          var stripeUrl = data.url || data.checkoutUrl || data.checkout_url || data.redirectUrl || data.redirect_url || data.sessionUrl || data.session_url || data.paymentUrl || data.payment_url || data.stripeUrl || data.stripe_url || '';
+          if (stripeUrl && stripeUrl.includes('stripe.com')) {
+            console.log('[WebView-JS] fetch JSON body contains Stripe URL:', stripeUrl);
+            try { window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' })); } catch(e) {}
+          }
+        }).catch(function() {});
+      } catch(e) {}
       return response;
     });
   };
@@ -208,13 +222,11 @@ const injectedJavaScriptBeforeContentLoaded = `
     xhr.addEventListener('load', function() {
       try {
         var data = JSON.parse(xhr.responseText);
-        if (data && data.url && data.url.includes('stripe.com')) {
-          console.log('[WebView-JS] XHR response contains Stripe URL:', data.url);
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
-        }
-        if (data && data.checkoutUrl && data.checkoutUrl.includes('stripe.com')) {
-          console.log('[WebView-JS] XHR response contains Stripe checkoutUrl:', data.checkoutUrl);
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+        if (!data) return;
+        var stripeUrl = data.url || data.checkoutUrl || data.checkout_url || data.redirectUrl || data.redirect_url || data.sessionUrl || data.session_url || data.paymentUrl || data.payment_url || data.stripeUrl || data.stripe_url || '';
+        if (stripeUrl && stripeUrl.includes('stripe.com')) {
+          console.log('[WebView-JS] XHR response contains Stripe URL:', stripeUrl);
+          try { window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' })); } catch(e) {}
         }
       } catch(e) {}
     });
