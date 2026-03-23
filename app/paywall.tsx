@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  Alert,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +17,9 @@ import RevenueCatUI from 'react-native-purchases-ui';
 import type { CustomerInfo } from 'react-native-purchases';
 import type { PurchasesError } from 'react-native-purchases';
 import { setPendingWebViewUrl } from '@/app/(tabs)/(home)/webViewRef';
+
+const TERMS_URL = 'https://tracknbook.app/terms';
+const PRIVACY_URL = 'https://tracknbook.app/privacy';
 
 // Error boundary to catch RevenueCatUI.Paywall throws (e.g. native module not linked in Expo Go)
 class PaywallErrorBoundary extends React.Component<
@@ -53,6 +58,7 @@ export default function PaywallScreen() {
   const [nativePaywallFailed, setNativePaywallFailed] = useState(false);
   const [resolvedOffering, setResolvedOffering] = useState<PurchasesOffering | null>(null);
   const [offeringLoading, setOfferingLoading] = useState(!!offeringId);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
     console.log('[Paywall] PaywallScreen mounted — offeringId param:', offeringId ?? 'none (using default)');
@@ -133,6 +139,41 @@ export default function PaywallScreen() {
     await openCustomerCenter();
   }, [openCustomerCenter]);
 
+  const handleRestorePurchases = useCallback(async () => {
+    console.log('[Paywall] Restore Purchases tapped');
+    setIsRestoring(true);
+    try {
+      const customerInfo = await Purchases.restorePurchases();
+      console.log('[Paywall] restorePurchases completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
+      const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
+      if (hasActive) {
+        await refreshCustomerInfo();
+        console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
+        setPendingWebViewUrl('/settings?tab=billing&purchase=1');
+        console.log('[Paywall] Navigating to home tab after restore');
+        router.replace('/(tabs)/(home)');
+      } else {
+        console.log('[Paywall] No active entitlements found after restore');
+        Alert.alert('No Purchases Found', 'No purchases found to restore');
+      }
+    } catch (e) {
+      console.error('[Paywall] restorePurchases error:', e);
+      Alert.alert('Restore Failed', 'Restore failed. Please try again');
+    } finally {
+      setIsRestoring(false);
+    }
+  }, [router, refreshCustomerInfo]);
+
+  const handleOpenTerms = useCallback(() => {
+    console.log('[Paywall] Terms of Service tapped');
+    Linking.openURL(TERMS_URL);
+  }, []);
+
+  const handleOpenPrivacy = useCallback(() => {
+    console.log('[Paywall] Privacy Policy tapped');
+    Linking.openURL(PRIVACY_URL);
+  }, []);
+
   // Web fallback
   if (Platform.OS === 'web') {
     return (
@@ -198,12 +239,24 @@ export default function PaywallScreen() {
       </PaywallErrorBoundary>
       <SafeAreaView edges={['bottom']} style={styles.footer}>
         <TouchableOpacity
-          style={styles.manageButton}
-          onPress={handleManageSubscription}
+          style={styles.restoreButton}
+          onPress={handleRestorePurchases}
           activeOpacity={0.7}
+          disabled={isRestoring}
         >
-          <Text style={styles.manageButtonText}>Manage Subscription</Text>
+          <Text style={styles.restoreButtonText}>
+            {isRestoring ? 'Restoring...' : 'Restore Purchases'}
+          </Text>
         </TouchableOpacity>
+        <View style={styles.legalRow}>
+          <TouchableOpacity onPress={handleOpenTerms} activeOpacity={0.7}>
+            <Text style={styles.legalLink}>Terms of Service</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalSeparator}>|</Text>
+          <TouchableOpacity onPress={handleOpenPrivacy} activeOpacity={0.7}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -222,16 +275,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 8,
     alignItems: 'center',
+    gap: 6,
   },
-  manageButton: {
+  restoreButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
-  manageButtonText: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 13,
-    fontWeight: '500',
+  restoreButtonText: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 14,
+    fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legalLink: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    fontWeight: '400',
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    color: 'rgba(255,255,255,0.25)',
+    fontSize: 12,
   },
   // Fallback / loading UI
   fallbackContainer: {
