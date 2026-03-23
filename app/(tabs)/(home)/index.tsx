@@ -81,7 +81,7 @@ const injectedJavaScriptBeforeContentLoaded = `
     var href = (el.getAttribute && el.getAttribute('href')) || '';
     var className = (el.className && typeof el.className === 'string' ? el.className : '').toLowerCase();
     var id = (el.id || '').toLowerCase();
-    var textMatch = text.includes('vehicle check') || text.includes('vehicle-check') || text.includes('bolt-on') || /\bbolt on\b/.test(text) || text.includes('addon') || text.includes('add-on') || /\+\s*\d+\s*checks?/.test(text);
+    var textMatch = text.includes('vehicle check') || text.includes('vehicle-check') || text.includes('bolt-on') || /\bbolt on\b/.test(text) || text.includes('addon') || text.includes('add-on') || /\+[\s\d,]+checks?/.test(text);
     var hrefMatch = href.includes('vehicle-check') || href.includes('bolt-on') || href.includes('addon');
     var attrMatch = className.includes('vehicle') || className.includes('bolt') || id.includes('vehicle') || id.includes('bolt');
     return textMatch || hrefMatch || attrMatch;
