@@ -14,7 +14,7 @@ import Purchases, { PurchasesOffering } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
 import type { CustomerInfo } from 'react-native-purchases';
 import type { PurchasesError } from 'react-native-purchases';
-import { webViewRef } from '@/app/(tabs)/(home)/webViewRef';
+import { setPendingWebViewUrl } from '@/app/(tabs)/(home)/webViewRef';
 
 // Error boundary to catch RevenueCatUI.Paywall throws (e.g. native module not linked in Expo Go)
 class PaywallErrorBoundary extends React.Component<
@@ -105,21 +105,23 @@ export default function PaywallScreen() {
   const handlePurchaseCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
     console.log('[Paywall] Purchase completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
     await refreshCustomerInfo();
-    console.log('[Paywall] Injecting WebView navigation to /settings?tab=billing');
-    webViewRef.current?.injectJavaScript(`window.location.href = '/settings?tab=billing'; true;`);
+    console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing');
+    setPendingWebViewUrl('/settings?tab=billing');
     setTimeout(() => {
-      router.back();
-    }, 300);
+      console.log('[Paywall] Navigating to home tab after purchase');
+      router.replace('/(tabs)/(home)');
+    }, 800);
   }, [router, refreshCustomerInfo]);
 
   const handleRestoreCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
     console.log('[Paywall] Restore completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
     await refreshCustomerInfo();
-    console.log('[Paywall] Injecting WebView navigation to /settings?tab=billing');
-    webViewRef.current?.injectJavaScript(`window.location.href = '/settings?tab=billing'; true;`);
+    console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing');
+    setPendingWebViewUrl('/settings?tab=billing');
     setTimeout(() => {
-      router.back();
-    }, 300);
+      console.log('[Paywall] Navigating to home tab after restore');
+      router.replace('/(tabs)/(home)');
+    }, 800);
   }, [router, refreshCustomerInfo]);
 
   const handlePurchaseError = useCallback(({ error }: { error: PurchasesError }) => {

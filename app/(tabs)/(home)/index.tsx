@@ -3,9 +3,10 @@ import { WebView } from "react-native-webview";
 import { Stack, useRouter } from "expo-router";
 import { StyleSheet, View, ActivityIndicator, Platform, Text } from "react-native";
 import { useTheme } from "@react-navigation/native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import Purchases from "react-native-purchases";
-import { webViewRef } from "./webViewRef";
+import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "./webViewRef";
 
 const webAppUrl = "https://www.tracknbook.app";
 
@@ -260,6 +261,19 @@ export default function HomeScreen() {
     console.log('[HomeScreen] mounted - WebView URL:', webAppUrl);
   }, []);
 
+  // When the home screen comes into focus (e.g. after returning from paywall),
+  // inject any pending navigation URL into the WebView.
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingWebViewUrl) {
+        const url = pendingWebViewUrl;
+        console.log('[HomeScreen] useFocusEffect — injecting pendingWebViewUrl:', url);
+        setPendingWebViewUrl(null);
+        webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
+      }
+    }, [])
+  );
+
   const handleMessage = async (event: any) => {
     const raw = event.nativeEvent.data;
     console.log('[HomeScreen] onMessage received raw:', raw);
@@ -317,6 +331,13 @@ export default function HomeScreen() {
     console.log('[HomeScreen] WebView load ended');
     setLoading(false);
     setError(null);
+    // Inject any pending URL that was set before the WebView was ready
+    if (pendingWebViewUrl) {
+      const url = pendingWebViewUrl;
+      console.log('[HomeScreen] onLoadEnd — injecting pendingWebViewUrl:', url);
+      setPendingWebViewUrl(null);
+      webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
+    }
   };
 
   const handleError = (syntheticEvent: any) => {
