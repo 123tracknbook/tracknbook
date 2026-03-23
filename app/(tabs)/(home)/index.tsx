@@ -126,8 +126,8 @@ const injectedJavaScriptBeforeContentLoaded = `
   // Event delegation on document for vehicle check bolt-on clicks (catches dynamically rendered buttons)
   document.addEventListener('click', function(e) {
     var target = e.target;
-    // Walk up to 5 ancestors to find a matching element
-    for (var i = 0; i < 5; i++) {
+    // Walk up to 10 ancestors to find a matching element
+    for (var i = 0; i < 10; i++) {
       if (!target || target === document.body) break;
       if (isVehicleCheckElement(target)) {
         var text = (target.textContent || '').trim().toLowerCase();
@@ -140,6 +140,24 @@ const injectedJavaScriptBeforeContentLoaded = `
         } catch(err) {
           console.log('[WebView-JS] postMessage failed on delegation click:', err);
         }
+        return;
+      }
+      target = target.parentElement;
+    }
+  }, true);
+
+  // Mousedown backup for frameworks that suppress click events
+  document.addEventListener('mousedown', function(e) {
+    var target = e.target;
+    for (var i = 0; i < 10; i++) {
+      if (!target || target === document.body) break;
+      if (isVehicleCheckElement(target)) {
+        var text = (target.textContent || '').trim().toLowerCase();
+        console.log('[WebView-JS] Vehicle check element mousedown via delegation | text:', text);
+        // Don't preventDefault here — just post the message; let the click also fire
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+        } catch(err) {}
         return;
       }
       target = target.parentElement;
@@ -236,6 +254,81 @@ const injectedJavaScriptBeforeContentLoaded = `
   } catch(e) {
     console.log('[WebView-JS] Could not patch window.location.assign:', e);
   }
+
+  // Intercept window.open calls to Stripe
+  var _origWindowOpen = window.open;
+  window.open = function(url) {
+    if (url && url.toString().includes('stripe.com')) {
+      console.log('[WebView-JS] window.open to Stripe intercepted:', url);
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+      } catch(e) {}
+      return null;
+    }
+    return _origWindowOpen.apply(this, arguments);
+  };
+
+  // Intercept window.location.href = 'stripe...' assignments
+  try {
+    var _loc = window.location;
+    var _hrefDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(_loc), 'href');
+    if (_hrefDescriptor && _hrefDescriptor.set) {
+      var _origHrefSet = _hrefDescriptor.set.bind(_loc);
+      Object.defineProperty(_loc, 'href', {
+        set: function(val) {
+          if (val && val.toString().includes('stripe.com')) {
+            console.log('[WebView-JS] window.location.href set to Stripe intercepted:', val);
+            try {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+            } catch(e) {}
+            return;
+          }
+          _origHrefSet(val);
+        },
+        get: function() {
+          return _loc.href;
+        },
+        configurable: true,
+      });
+    }
+  } catch(e) {
+    console.log('[WebView-JS] Could not patch window.location.href setter:', e);
+  }
+
+  // Intercept window.location.replace calls to Stripe
+  try {
+    var _origReplace = window.location.replace.bind(window.location);
+    window.location.replace = function(url) {
+      if (url && url.toString().includes('stripe.com')) {
+        console.log('[WebView-JS] window.location.replace to Stripe intercepted:', url);
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+        } catch(e) {}
+        return;
+      }
+      return _origReplace(url);
+    };
+  } catch(e) {
+    console.log('[WebView-JS] Could not patch window.location.replace:', e);
+  }
+
+  // Intercept fetch — also check request URL itself (not just response) for Stripe
+  // (already patched above for response.url, this catches direct fetch to stripe)
+  var _origFetch2 = window.fetch;
+  window.fetch = function() {
+    var args = arguments;
+    var reqUrl = '';
+    if (args[0] && typeof args[0] === 'string') reqUrl = args[0];
+    else if (args[0] && args[0].url) reqUrl = args[0].url;
+    if (reqUrl && reqUrl.includes('stripe.com')) {
+      console.log('[WebView-JS] fetch to Stripe intercepted:', reqUrl);
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
+      } catch(e) {}
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    }
+    return _origFetch2.apply(this, args);
+  };
 })();
 true;
 `;
@@ -383,6 +476,26 @@ export default function HomeScreen() {
     setLoading(false);
   };
 
+  const handleOpenWindow = (syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    const url = nativeEvent?.targetUrl || '';
+    console.log('[HomeScreen] onOpenWindow:', url);
+    if (url.includes('stripe.com')) {
+      console.log('[HomeScreen] onOpenWindow Stripe URL intercepted — pushing Bolt ons paywall');
+      router.push('/paywall?offeringId=Bolt%20ons');
+    }
+  };
+
+  const handleNavigationStateChange = (navState: any) => {
+    const url = navState?.url || '';
+    console.log('[HomeScreen] onNavigationStateChange:', url);
+    if (url.includes('stripe.com')) {
+      console.log('[HomeScreen] Stripe URL in navigation state — pushing Bolt ons paywall and going back');
+      router.push('/paywall?offeringId=Bolt%20ons');
+      webViewRef.current?.goBack();
+    }
+  };
+
   const loadingTextColor = colors.text;
   const errorTextColor = colors.text;
 
@@ -413,6 +526,8 @@ export default function HomeScreen() {
             onHttpError={handleHttpError}
             onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
             onMessage={handleMessage}
+            onOpenWindow={handleOpenWindow}
+            onNavigationStateChange={handleNavigationStateChange}
             injectedJavaScriptBeforeContentLoaded={injectedJavaScriptBeforeContentLoaded}
             injectedJavaScript={injectedJavaScript}
             startInLoadingState={false}
