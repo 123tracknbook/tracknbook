@@ -84,11 +84,7 @@ const injectedJavaScriptBeforeContentLoaded = `
     var textMatch = text.includes('vehicle check') || text.includes('vehicle-check') || text.includes('bolt-on') || /\bbolt on\b/.test(text) || text.includes('addon') || text.includes('add-on') || /\+[\s\d,]+checks?/.test(text);
     var hrefMatch = href.includes('vehicle-check') || href.includes('bolt-on') || href.includes('addon');
     var attrMatch = className.includes('vehicle') || className.includes('bolt') || id.includes('vehicle') || id.includes('bolt');
-    var result = textMatch || hrefMatch || attrMatch;
-    if (result) {
-      console.log('[WebView-JS] isVehicleCheckElement MATCH:', text, '| href:', href, '| class:', className);
-    }
-    return result;
+    return textMatch || hrefMatch || attrMatch;
   }
 
   // Intercept "Change Plan" / "Upgrade" / "Vehicle Check" button clicks
@@ -125,21 +121,11 @@ const injectedJavaScriptBeforeContentLoaded = `
         }, true);
       }
     });
-    // Diagnostic: log all buttons and links
-    var allEls = document.querySelectorAll('a, button');
-    allEls.forEach(function(el) {
-      var text = (el.textContent || '').trim().toLowerCase();
-      var href = el.getAttribute('href') || '';
-      if (text.length > 0 && text.length < 100) {
-        console.log('[WebView-JS] ELEMENT:', el.tagName, '| text:', text, '| href:', href, '| class:', el.className, '| id:', el.id);
-      }
-    });
   }
 
   // Event delegation on document for vehicle check bolt-on clicks (catches dynamically rendered buttons)
   document.addEventListener('click', function(e) {
     var target = e.target;
-    console.log('[WebView-JS] CLICK EVENT on:', target.tagName, '| text:', (target.textContent || '').trim().substring(0, 80), '| class:', target.className);
     // Walk up to 5 ancestors to find a matching element
     for (var i = 0; i < 5; i++) {
       if (!target || target === document.body) break;
@@ -277,6 +263,11 @@ export default function HomeScreen() {
   const handleShouldStartLoadWithRequest = (request: any) => {
     const url = request.url;
     console.log('[HomeScreen] onShouldStartLoadWithRequest:', url);
+    if (url.includes('checkout.stripe.com') || url.includes('stripe.com/checkout') || (url.includes('stripe.com') && url.includes('pay'))) {
+      console.log('[HomeScreen] Stripe checkout URL intercepted — pushing Bolt ons paywall:', url);
+      router.push('/paywall?offeringId=Bolt%20ons');
+      return false;
+    }
     if (url.includes('/plans')) {
       console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest — pushing subscriptions paywall');
       router.push('/paywall?offeringId=subscriptions');
