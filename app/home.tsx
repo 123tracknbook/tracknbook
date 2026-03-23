@@ -3,6 +3,7 @@ import { StyleSheet, View, ActivityIndicator, Platform, Text } from "react-nativ
 import { WebView } from "react-native-webview";
 import { useTheme } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
+import Purchases from "react-native-purchases";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -23,7 +24,7 @@ export default function HomeScreen() {
 
   const webAppUrl = "https://www.tracknbook.app";
 
-  const handleMessage = (event: any) => {
+  const handleMessage = async (event: any) => {
     const raw = event.nativeEvent.data;
     console.log('[WebView] onMessage received raw data:', raw);
     try {
@@ -32,6 +33,26 @@ export default function HomeScreen() {
       if (data.type === 'INTERCEPT_URL' || data.type === 'OPEN_PAYWALL') {
         console.log('[WebView] Paywall trigger received, type:', data.type, data.url ? 'url: ' + data.url : '');
         router.push('/paywall');
+        return;
+      }
+      if (data.type === 'AUTH_SIGNED_IN' && data.userId) {
+        console.log('[WebView] Auth signed in, identifying user in RevenueCat, userId:', data.userId);
+        try {
+          await Purchases.logIn(data.userId);
+          console.log('[RevenueCat] logIn succeeded for userId:', data.userId);
+        } catch (e) {
+          console.warn('[RevenueCat] logIn failed (non-fatal):', e);
+        }
+        return;
+      }
+      if (data.type === 'AUTH_SIGNED_OUT') {
+        console.log('[WebView] Auth signed out, logging out of RevenueCat');
+        try {
+          await Purchases.logOut();
+          console.log('[RevenueCat] logOut succeeded');
+        } catch (e) {
+          console.warn('[RevenueCat] logOut failed (non-fatal):', e);
+        }
         return;
       }
     } catch (e) {
@@ -127,6 +148,57 @@ export default function HomeScreen() {
     tagInputs();
     var observer = new MutationObserver(tagInputs);
     observer.observe(document.body, { childList: true, subtree: true });
+
+    // --- Supabase auth state bridge ---
+    (function setupSupabaseAuthBridge() {
+      try {
+        // Try to access the Supabase client exposed on window (common pattern)
+        var supabase = window.supabase || (window.__supabase) || null;
+        if (supabase && supabase.auth && supabase.auth.onAuthStateChange) {
+          supabase.auth.onAuthStateChange(function(event, session) {
+            try {
+              if (event === 'SIGNED_IN' && session && session.user) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SIGNED_IN', userId: session.user.id }));
+              } else if (event === 'SIGNED_OUT') {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SIGNED_OUT' }));
+              }
+            } catch(e) {}
+          });
+          return;
+        }
+      } catch(e) {}
+
+      // Fallback: poll localStorage for Supabase session token changes
+      var lastUserId = null;
+      function getSupabaseUserId() {
+        try {
+          for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+              var raw = localStorage.getItem(key);
+              if (raw) {
+                var parsed = JSON.parse(raw);
+                return (parsed && parsed.user && parsed.user.id) ? parsed.user.id : null;
+              }
+            }
+          }
+        } catch(e) {}
+        return null;
+      }
+      setInterval(function() {
+        var userId = getSupabaseUserId();
+        if (userId !== lastUserId) {
+          try {
+            if (userId) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SIGNED_IN', userId: userId }));
+            } else if (lastUserId) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SIGNED_OUT' }));
+            }
+          } catch(e) {}
+          lastUserId = userId;
+        }
+      }, 1000);
+    })();
   })();
   true;
 `;
