@@ -18,8 +18,8 @@ import type { CustomerInfo } from 'react-native-purchases';
 import type { PurchasesError } from 'react-native-purchases';
 import { setPendingWebViewUrl } from '@/app/(tabs)/(home)/webViewRef';
 
-const TERMS_URL = 'https://tracknbook.app/terms';
-const PRIVACY_URL = 'https://tracknbook.app/privacy';
+const TERMS_URL = 'https://www.tracknbook.com/terms-and-conditions';
+const PRIVACY_URL = 'https://www.tracknbook.com/privacy-policy';
 
 // Error boundary to catch RevenueCatUI.Paywall throws (e.g. native module not linked in Expo Go)
 class PaywallErrorBoundary extends React.Component<
