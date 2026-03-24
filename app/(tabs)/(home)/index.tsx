@@ -3,7 +3,7 @@ import { WebView } from "react-native-webview";
 import { Stack, useRouter } from "expo-router";
 import { StyleSheet, View, ActivityIndicator, Platform, Text } from "react-native";
 import { useTheme } from "@react-navigation/native";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import Purchases from "react-native-purchases";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "./webViewRef";
@@ -296,6 +296,9 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
   const router = useRouter();
+  // Track the last RevenueCat-logged userId so we don't call logIn redundantly
+  // across WebView reloads within the same native session.
+  const rcLoggedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     console.log('[HomeScreen] mounted - WebView URL:', webAppUrl);
@@ -330,9 +333,14 @@ export default function HomeScreen() {
         return;
       }
       if (data.type === 'AUTH_SIGNED_IN' && data.userId) {
+        if (rcLoggedUserIdRef.current === data.userId) {
+          console.log('[HomeScreen] AUTH_SIGNED_IN — skipping Purchases.logIn, already logged in as:', data.userId);
+          return;
+        }
         console.log('[HomeScreen] AUTH_SIGNED_IN — calling Purchases.logIn with userId:', data.userId);
         try {
           const result = await Purchases.logIn(data.userId);
+          rcLoggedUserIdRef.current = data.userId;
           console.log('[RevenueCat] logIn succeeded, created:', result.created, '| userId:', data.userId);
         } catch (e) {
           console.warn('[RevenueCat] logIn failed (non-fatal):', e);
@@ -343,6 +351,7 @@ export default function HomeScreen() {
         console.log('[HomeScreen] AUTH_SIGNED_OUT — calling Purchases.logOut');
         try {
           await Purchases.logOut();
+          rcLoggedUserIdRef.current = null;
           console.log('[RevenueCat] logOut succeeded');
         } catch (e) {
           console.warn('[RevenueCat] logOut failed (non-fatal):', e);
