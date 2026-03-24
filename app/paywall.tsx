@@ -16,7 +16,7 @@ import Purchases, { PurchasesOffering } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
 import type { CustomerInfo } from 'react-native-purchases';
 import type { PurchasesError } from 'react-native-purchases';
-import { setPendingWebViewUrl } from '@/app/(tabs)/(home)/webViewRef';
+import { setPendingWebViewUrl, webViewRef } from '@/app/(tabs)/(home)/webViewRef';
 
 const TERMS_URL = 'https://www.tracknbook.com/terms-and-conditions';
 const PRIVACY_URL = 'https://www.tracknbook.com/privacy-policy';
@@ -113,6 +113,10 @@ export default function PaywallScreen() {
     await refreshCustomerInfo();
     console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
     setPendingWebViewUrl('/settings?tab=billing&purchase=1');
+    if (webViewRef.current) {
+      console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
+      webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
+    }
     console.log('[Paywall] Navigating to home tab after purchase');
     router.replace('/(tabs)/(home)');
   }, [router, refreshCustomerInfo]);
@@ -122,6 +126,10 @@ export default function PaywallScreen() {
     await refreshCustomerInfo();
     console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
     setPendingWebViewUrl('/settings?tab=billing&purchase=1');
+    if (webViewRef.current) {
+      console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
+      webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
+    }
     console.log('[Paywall] Navigating to home tab after restore');
     router.replace('/(tabs)/(home)');
   }, [router, refreshCustomerInfo]);
@@ -145,6 +153,10 @@ export default function PaywallScreen() {
         await refreshCustomerInfo();
         console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
         setPendingWebViewUrl('/settings?tab=billing&purchase=1');
+        if (webViewRef.current) {
+          console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
+          webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
+        }
         console.log('[Paywall] Navigating to home tab after restore');
         router.replace('/(tabs)/(home)');
       } else {
