@@ -117,8 +117,8 @@ export default function PaywallScreen() {
       console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
       webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
     }
-    console.log('[Paywall] Navigating to home tab after purchase');
-    router.replace('/(tabs)/(home)');
+    console.log('[Paywall] Navigating back to previous screen after purchase');
+    router.back();
   }, [router, refreshCustomerInfo]);
 
   const handleRestoreCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
@@ -130,8 +130,8 @@ export default function PaywallScreen() {
       console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
       webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
     }
-    console.log('[Paywall] Navigating to home tab after restore');
-    router.replace('/(tabs)/(home)');
+    console.log('[Paywall] Navigating back to previous screen after restore');
+    router.back();
   }, [router, refreshCustomerInfo]);
 
   const handlePurchaseError = useCallback(({ error }: { error: PurchasesError }) => {
@@ -157,8 +157,8 @@ export default function PaywallScreen() {
           console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
           webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
         }
-        console.log('[Paywall] Navigating to home tab after restore');
-        router.replace('/(tabs)/(home)');
+        console.log('[Paywall] Navigating back to previous screen after restore');
+        router.back();
       } else {
         console.log('[Paywall] No active entitlements found after restore');
         Alert.alert('No Purchases Found', 'No purchases found to restore');
