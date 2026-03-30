@@ -46,9 +46,10 @@
             }
           }
         },
-        "NSCameraUsageDescription": "This app uses the camera to allow you to take photos and videos.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images and videos.",
-        "NSMicrophoneUsageDescription": "This app needs access to your microphone to record videos.",
+        "NSCameraUsageDescription": "TracknBook uses the camera so team members can take and upload job photos, such as before-and-after images, completed work, damage, or materials on site, and attach them to a job record.",
+        "NSPhotoLibraryUsageDescription": "TracknBook uses the photo library to allow users to upload existing images, such as job photos or documents, and attach them to a job record.",
+        "NSPhotoLibraryAddUsageDescription": "TracknBook may save images to your photo library, such as job photos or exported documents.",
+        "NSMicrophoneUsageDescription": "TracknBook uses the microphone when capturing video so audio can be recorded alongside job footage.",
         "UIBackgroundModes": [
           "remote-notification"
         ]
