@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { StyleSheet, View, ActivityIndicator, Text } from "react-native";
 import Purchases from "react-native-purchases";
+import * as Notifications from "expo-notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "./webViewRef";
 
 const webAppUrl = "https://www.tracknbook.app";
@@ -356,6 +357,16 @@ export default function HomeScreen() {
         } catch (e) {
           console.warn('[RevenueCat] logIn failed (non-fatal, iOS):', e);
         }
+        return;
+      }
+      if (data.type === 'REQUEST_PUSH_PERMISSION') {
+        console.log('[HomeScreen] REQUEST_PUSH_PERMISSION received (iOS) — requesting permissions');
+        const { status } = await Notifications.requestPermissionsAsync();
+        const granted = status === 'granted';
+        console.log('[HomeScreen] Push permission result (iOS):', status);
+        const resultStatus = granted ? 'granted' : 'denied';
+        const js = `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`;
+        webViewRef.current?.injectJavaScript(js);
         return;
       }
       if (data.type === 'AUTH_SIGNED_OUT' || data.type === 'SIGN_OUT') {
