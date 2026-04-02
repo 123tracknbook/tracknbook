@@ -361,12 +361,24 @@ export default function HomeScreen() {
       }
       if (data.type === 'REQUEST_PUSH_PERMISSION') {
         console.log('[HomeScreen] REQUEST_PUSH_PERMISSION received (iOS) — requesting permissions');
-        const { status } = await Notifications.requestPermissionsAsync();
-        const granted = status === 'granted';
-        console.log('[HomeScreen] Push permission result (iOS):', status);
-        const resultStatus = granted ? 'granted' : 'denied';
-        const js = `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`;
-        webViewRef.current?.injectJavaScript(js);
+        try {
+          const { status } = await Notifications.requestPermissionsAsync({
+            ios: {
+              allowAlert: true,
+              allowBadge: true,
+              allowSound: true,
+            },
+          });
+          const granted = status === 'granted';
+          console.log('[HomeScreen] Push permission result (iOS):', status);
+          const resultStatus = granted ? 'granted' : 'denied';
+          const js = `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`;
+          webViewRef.current?.injectJavaScript(js);
+        } catch (e) {
+          console.warn('[HomeScreen] REQUEST_PUSH_PERMISSION error (iOS):', e);
+          const js = `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: 'denied' } })); true;`;
+          webViewRef.current?.injectJavaScript(js);
+        }
         return;
       }
       if (data.type === 'AUTH_SIGNED_OUT' || data.type === 'SIGN_OUT') {
