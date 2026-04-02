@@ -10,3 +10,10 @@ export let pendingWebViewUrl: string | null = null;
 export function setPendingWebViewUrl(url: string | null) {
   pendingWebViewUrl = url;
 }
+
+// Last known Supabase user ID that has been logged in to RevenueCat.
+// Shared so paywall.tsx can re-associate the subscriber after a purchase.
+export let currentRcUserId: string | null = null;
+export function setCurrentRcUserId(userId: string | null) {
+  currentRcUserId = userId;
+}

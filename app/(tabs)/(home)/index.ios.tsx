@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { StyleSheet, View, ActivityIndicator, Text } from "react-native";
 import Purchases from "react-native-purchases";
-import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "./webViewRef";
+import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "./webViewRef";
 
 const webAppUrl = "https://www.tracknbook.app";
 
@@ -324,6 +324,24 @@ export default function HomeScreen() {
         router.push('/paywall');
         return;
       }
+      if (data.type === 'REVENUECAT_LOGIN') {
+        console.log('[HomeScreen] REVENUECAT_LOGIN received (iOS) — userId:', data.userId);
+        if (data.userId) {
+          if (rcLoggedUserIdRef.current === data.userId) {
+            console.log('[HomeScreen] REVENUECAT_LOGIN (iOS) — skipping Purchases.logIn, already logged in as:', data.userId);
+          } else {
+            try {
+              const result = await Purchases.logIn(data.userId);
+              rcLoggedUserIdRef.current = data.userId;
+              setCurrentRcUserId(data.userId);
+              console.log('[RevenueCat] logIn (REVENUECAT_LOGIN) succeeded (iOS), created:', result.created, '| userId:', data.userId);
+            } catch (e) {
+              console.warn('[RevenueCat] logIn (REVENUECAT_LOGIN) failed (non-fatal, iOS):', e);
+            }
+          }
+        }
+        return;
+      }
       if (data.type === 'AUTH_SIGNED_IN' && data.userId) {
         if (rcLoggedUserIdRef.current === data.userId) {
           console.log('[HomeScreen] AUTH_SIGNED_IN (iOS) — skipping Purchases.logIn, already logged in as:', data.userId);
@@ -333,17 +351,19 @@ export default function HomeScreen() {
         try {
           const result = await Purchases.logIn(data.userId);
           rcLoggedUserIdRef.current = data.userId;
+          setCurrentRcUserId(data.userId);
           console.log('[RevenueCat] logIn succeeded (iOS), created:', result.created, '| userId:', data.userId);
         } catch (e) {
           console.warn('[RevenueCat] logIn failed (non-fatal, iOS):', e);
         }
         return;
       }
-      if (data.type === 'AUTH_SIGNED_OUT') {
-        console.log('[HomeScreen] AUTH_SIGNED_OUT (iOS) — calling Purchases.logOut');
+      if (data.type === 'AUTH_SIGNED_OUT' || data.type === 'SIGN_OUT') {
+        console.log('[HomeScreen]', data.type, '(iOS) — calling Purchases.logOut');
         try {
           await Purchases.logOut();
           rcLoggedUserIdRef.current = null;
+          setCurrentRcUserId(null);
           console.log('[RevenueCat] logOut succeeded (iOS)');
         } catch (e) {
           console.warn('[RevenueCat] logOut failed (non-fatal, iOS):', e);

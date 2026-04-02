@@ -16,7 +16,7 @@ import Purchases, { PurchasesOffering } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
 import type { CustomerInfo } from 'react-native-purchases';
 import type { PurchasesError } from 'react-native-purchases';
-import { setPendingWebViewUrl, webViewRef } from '@/app/(tabs)/(home)/webViewRef';
+import { setPendingWebViewUrl, webViewRef, currentRcUserId, setCurrentRcUserId } from '@/app/(tabs)/(home)/webViewRef';
 
 const TERMS_URL = 'https://www.tracknbook.com/terms-and-conditions';
 const PRIVACY_URL = 'https://www.tracknbook.com/privacy-policy';
@@ -110,6 +110,21 @@ export default function PaywallScreen() {
 
   const handlePurchaseCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
     console.log('[Paywall] Purchase completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
+    // Re-associate the subscriber with the correct Supabase user ID — RevenueCat may have
+    // created an anonymous record during the purchase flow.
+    const userId = currentRcUserId;
+    if (userId) {
+      console.log('[Paywall] Re-calling Purchases.logIn after purchase to re-associate userId:', userId);
+      try {
+        await Purchases.logIn(userId);
+        setCurrentRcUserId(userId);
+        console.log('[Paywall] Purchases.logIn re-association succeeded after purchase');
+      } catch (e) {
+        console.warn('[Paywall] Purchases.logIn re-association failed (non-fatal) after purchase:', e);
+      }
+    } else {
+      console.log('[Paywall] No currentRcUserId — skipping logIn re-association after purchase');
+    }
     await refreshCustomerInfo();
     console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
     setPendingWebViewUrl('/settings?tab=billing&purchase=1');
@@ -123,6 +138,20 @@ export default function PaywallScreen() {
 
   const handleRestoreCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
     console.log('[Paywall] Restore completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
+    // Re-associate the subscriber with the correct Supabase user ID after restore.
+    const userId = currentRcUserId;
+    if (userId) {
+      console.log('[Paywall] Re-calling Purchases.logIn after restore to re-associate userId:', userId);
+      try {
+        await Purchases.logIn(userId);
+        setCurrentRcUserId(userId);
+        console.log('[Paywall] Purchases.logIn re-association succeeded after restore');
+      } catch (e) {
+        console.warn('[Paywall] Purchases.logIn re-association failed (non-fatal) after restore:', e);
+      }
+    } else {
+      console.log('[Paywall] No currentRcUserId — skipping logIn re-association after restore');
+    }
     await refreshCustomerInfo();
     console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
     setPendingWebViewUrl('/settings?tab=billing&purchase=1');
@@ -150,6 +179,20 @@ export default function PaywallScreen() {
       console.log('[Paywall] restorePurchases completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
       const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
       if (hasActive) {
+        // Re-associate the subscriber with the correct Supabase user ID after manual restore.
+        const userId = currentRcUserId;
+        if (userId) {
+          console.log('[Paywall] Re-calling Purchases.logIn after manual restore to re-associate userId:', userId);
+          try {
+            await Purchases.logIn(userId);
+            setCurrentRcUserId(userId);
+            console.log('[Paywall] Purchases.logIn re-association succeeded after manual restore');
+          } catch (e) {
+            console.warn('[Paywall] Purchases.logIn re-association failed (non-fatal) after manual restore:', e);
+          }
+        } else {
+          console.log('[Paywall] No currentRcUserId — skipping logIn re-association after manual restore');
+        }
         await refreshCustomerInfo();
         console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
         setPendingWebViewUrl('/settings?tab=billing&purchase=1');
