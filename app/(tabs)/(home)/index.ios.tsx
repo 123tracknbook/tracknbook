@@ -426,10 +426,11 @@ export default function HomeScreen() {
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
-    // Auto-prompt for push notification permissions only if undetermined.
+    // Check/request push notification permissions and sync result to WebView.
     try {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       console.log('[HomeScreen] onLoadEnd (iOS) — current push permission status:', existingStatus);
+      let finalStatus = existingStatus;
       if (existingStatus === 'undetermined') {
         console.log('[HomeScreen] onLoadEnd (iOS) — status is undetermined, requesting push permissions');
         const { status } = await Notifications.requestPermissionsAsync({
@@ -439,10 +440,16 @@ export default function HomeScreen() {
             allowSound: true,
           },
         });
-        console.log('[HomeScreen] onLoadEnd (iOS) — push permission result:', status);
+        finalStatus = status;
+        console.log('[HomeScreen] onLoadEnd (iOS) — push permission result:', finalStatus);
       } else {
         console.log('[HomeScreen] onLoadEnd (iOS) — push permission already', existingStatus, '— skipping prompt');
       }
+      const resultStatus = finalStatus === 'granted' ? 'granted' : 'denied';
+      console.log('[HomeScreen] onLoadEnd (iOS) — injecting nativePushPermissionResult into WebView, status:', resultStatus);
+      webViewRef.current?.injectJavaScript(
+        `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`
+      );
     } catch (e) {
       console.warn('[HomeScreen] onLoadEnd (iOS) — push permission check/request error:', e);
     }
