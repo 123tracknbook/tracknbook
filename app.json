@@ -96,7 +96,7 @@
         "expo-image-picker",
         {
           "photosPermission": "The app accesses your photos to let you select images.",
-          "cameraPermission": "The app accesses your camera to let you take photos and videos.",
+          "cameraPermission": "TracknBook uses your camera so team members can take photos for jobs, such as before-and-after work photos, site issues, or completed work, and attach them to the job record.",
           "microphonePermission": "The app accesses your microphone to let you record videos."
         }
       ]
