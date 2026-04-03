@@ -415,7 +415,7 @@ export default function HomeScreen() {
     setError(null);
   };
 
-  const handleLoadEnd = () => {
+  const handleLoadEnd = async () => {
     console.log('[HomeScreen] WebView load ended (iOS)');
     setLoading(false);
     setError(null);
@@ -425,6 +425,26 @@ export default function HomeScreen() {
       console.log('[HomeScreen] onLoadEnd (iOS) — pendingWebViewUrl detected:', url, '— injecting immediately');
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
+    }
+    // Auto-prompt for push notification permissions if not already granted.
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      console.log('[HomeScreen] onLoadEnd (iOS) — current push permission status:', existingStatus);
+      if (existingStatus !== 'granted') {
+        console.log('[HomeScreen] onLoadEnd (iOS) — requesting push permissions');
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          },
+        });
+        console.log('[HomeScreen] onLoadEnd (iOS) — push permission result:', status);
+      } else {
+        console.log('[HomeScreen] onLoadEnd (iOS) — push permissions already granted, skipping prompt');
+      }
+    } catch (e) {
+      console.warn('[HomeScreen] onLoadEnd (iOS) — push permission check/request error:', e);
     }
   };
 
