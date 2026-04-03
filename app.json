@@ -46,7 +46,7 @@
             }
           }
         },
-        "NSCameraUsageDescription": "TracknBook uses your camera so you can take photos for jobs, such as before-and-after work images, site photos, damage photos, parts photos, and receipts, and attach them to the job record.",
+        "NSCameraUsageDescription": "TracknBook uses your camera so team members can take photos for jobs, such as before-and-after work photos, site issues, or completed work, and attach them to the job record.",
         "NSPhotoLibraryUsageDescription": "TracknBook accesses your photo library so you can upload existing job photos, such as before-and-after work images, site photos, damage photos, parts photos, and receipts, to the relevant job record.",
         "NSPhotoLibraryAddUsageDescription": "TracknBook may save images to your photo library, such as job photos or exported documents.",
         "NSMicrophoneUsageDescription": "TracknBook uses the microphone when capturing video so audio can be recorded alongside job footage.",
