@@ -16,20 +16,11 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
-import * as Notifications from 'expo-notifications';
+import { registerForPushNotificationsAsync } from '@/utils/notifications';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
-
-// Configure how notifications are handled when the app is in the foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Note: Notifications.setNotificationHandler is already called in utils/notifications.ts
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
@@ -40,6 +31,17 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+
+  useEffect(() => {
+    console.log('[RootLayout] Requesting push notification permissions on launch');
+    registerForPushNotificationsAsync()
+      .then((token) => {
+        console.log('[RootLayout] Push notification token:', token ?? 'undefined (simulator or denied)');
+      })
+      .catch((err) => {
+        console.warn('[RootLayout] Push notification registration error:', err);
+      });
+  }, []);
 
   useEffect(() => {
     console.log('RootLayout mounted, fonts loaded:', loaded);

@@ -6,6 +6,7 @@ import { useTheme } from "@react-navigation/native";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import Purchases from "react-native-purchases";
+import * as Notifications from "expo-notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "./webViewRef";
 
 const webAppUrl = "https://www.tracknbook.app";
@@ -304,6 +305,37 @@ export default function HomeScreen() {
     console.log('[HomeScreen] mounted - WebView URL:', webAppUrl);
   }, []);
 
+  // Request push notification permissions on mount and inject result into WebView
+  useEffect(() => {
+    let cancelled = false;
+    async function requestPushPermissions() {
+      console.log('[HomeScreen] useEffect push permissions — starting');
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        console.log('[HomeScreen] useEffect push permissions — current status:', existingStatus);
+        let finalStatus = existingStatus;
+        if (existingStatus === 'undetermined') {
+          console.log('[HomeScreen] useEffect push permissions — status undetermined, calling requestPermissionsAsync');
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+          console.log('[HomeScreen] useEffect push permissions — requestPermissionsAsync result:', finalStatus);
+        } else {
+          console.log('[HomeScreen] useEffect push permissions — already determined:', existingStatus, '— skipping prompt');
+        }
+        if (cancelled) return;
+        const resultStatus = finalStatus === 'granted' ? 'granted' : 'denied';
+        console.log('[HomeScreen] useEffect push permissions — injecting nativePushPermissionResult into WebView, status:', resultStatus);
+        webViewRef.current?.injectJavaScript(
+          `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`
+        );
+      } catch (e) {
+        console.warn('[HomeScreen] useEffect push permissions — error:', e);
+      }
+    }
+    requestPushPermissions();
+    return () => { cancelled = true; };
+  }, []);
+
   // When the home screen comes into focus (e.g. after returning from paywall),
   // inject the pending URL immediately — the web app handles polling via ?purchase=1.
   useFocusEffect(
@@ -400,7 +432,7 @@ export default function HomeScreen() {
     setError(null);
   };
 
-  const handleLoadEnd = () => {
+  const handleLoadEnd = async () => {
     console.log('[HomeScreen] WebView load ended');
     setLoading(false);
     setError(null);
@@ -410,6 +442,23 @@ export default function HomeScreen() {
       console.log('[HomeScreen] onLoadEnd — pendingWebViewUrl detected:', url, '— injecting immediately');
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
+    }
+    // Re-inject push permission result on subsequent WebView loads (SPA navigation, refresh).
+    // Only inject if already determined — the mount useEffect handles the initial prompt.
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      console.log('[HomeScreen] onLoadEnd — push permission status:', existingStatus);
+      if (existingStatus !== 'undetermined') {
+        const resultStatus = existingStatus === 'granted' ? 'granted' : 'denied';
+        console.log('[HomeScreen] onLoadEnd — re-injecting nativePushPermissionResult, status:', resultStatus);
+        webViewRef.current?.injectJavaScript(
+          `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`
+        );
+      } else {
+        console.log('[HomeScreen] onLoadEnd — status still undetermined, useEffect will handle the prompt');
+      }
+    } catch (e) {
+      console.warn('[HomeScreen] onLoadEnd — push permission status check error:', e);
     }
   };
 
