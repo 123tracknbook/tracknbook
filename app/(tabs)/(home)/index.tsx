@@ -9,6 +9,7 @@ import Purchases from "react-native-purchases";
 import * as Notifications from "expo-notifications";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "./webViewRef";
+import * as Clipboard from 'expo-clipboard';
 
 const webAppUrl = "https://www.tracknbook.app";
 
@@ -373,6 +374,18 @@ export default function HomeScreen() {
           registerForPushNotificationsAsync().catch(err =>
             console.error('[HomeScreen] Push registration error:', err)
           );
+        }
+        return;
+      }
+      if (data.type === 'READ_CLIPBOARD') {
+        console.log('[HomeScreen] READ_CLIPBOARD received — reading clipboard');
+        try {
+          const text = await Clipboard.getStringAsync();
+          console.log('[HomeScreen] READ_CLIPBOARD success, text length:', text.length);
+          webViewRef.current?.injectJavaScript(`window.postMessage({ type: 'CLIPBOARD_RESULT', text: ${JSON.stringify(text)} }, '*'); true;`);
+        } catch (e) {
+          console.warn('[HomeScreen] READ_CLIPBOARD failed:', e);
+          webViewRef.current?.injectJavaScript(`window.postMessage({ type: 'CLIPBOARD_ERROR', message: 'Failed to read clipboard' }, '*'); true;`);
         }
         return;
       }

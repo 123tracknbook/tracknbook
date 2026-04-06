@@ -9,6 +9,7 @@ import Purchases from "react-native-purchases";
 import * as Notifications from "expo-notifications";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "./webViewRef";
+import * as Clipboard from 'expo-clipboard';
 
 const webAppUrl = "https://www.tracknbook.app";
 
@@ -387,6 +388,18 @@ export default function HomeScreen() {
           console.warn('[HomeScreen] REQUEST_PUSH_PERMISSION error (iOS):', e);
           const js = `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: 'denied' } })); true;`;
           webViewRef.current?.injectJavaScript(js);
+        }
+        return;
+      }
+      if (data.type === 'READ_CLIPBOARD') {
+        console.log('[HomeScreen] READ_CLIPBOARD received (iOS) — reading clipboard');
+        try {
+          const text = await Clipboard.getStringAsync();
+          console.log('[HomeScreen] READ_CLIPBOARD success (iOS), text length:', text.length);
+          webViewRef.current?.injectJavaScript(`window.postMessage({ type: 'CLIPBOARD_RESULT', text: ${JSON.stringify(text)} }, '*'); true;`);
+        } catch (e) {
+          console.warn('[HomeScreen] READ_CLIPBOARD failed (iOS):', e);
+          webViewRef.current?.injectJavaScript(`window.postMessage({ type: 'CLIPBOARD_ERROR', message: 'Failed to read clipboard' }, '*'); true;`);
         }
         return;
       }

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -35,25 +35,25 @@ export default function NotificationsDemoScreen() {
   const isWeb = Platform.OS === 'web';
 
   // Update scheduled notifications count
-  const updateScheduledCount = async () => {
+  const updateScheduledCount = useCallback(async () => {
     if (isWeb) return;
     const notifications = await getScheduledNotifications();
     setScheduledCount(notifications.length);
-  };
+  }, [isWeb]);
 
   // Update badge count
-  const updateBadgeCount = async () => {
+  const updateBadgeCount = useCallback(async () => {
     if (isWeb) return;
     const count = await getBadgeCount();
     setBadgeCountState(count);
-  };
+  }, [isWeb]);
 
   useEffect(() => {
     if (!isWeb) {
       updateScheduledCount();
       updateBadgeCount();
     }
-  }, [isWeb]);
+  }, [isWeb, updateScheduledCount, updateBadgeCount]);
 
   // Handle notification received while app is open
   useEffect(() => {

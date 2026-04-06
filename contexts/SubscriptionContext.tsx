@@ -45,9 +45,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
 
     loadData();
-  }, []);
+  }, [loadData]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     console.log('[SubscriptionContext] Loading customer info and offerings');
     try {
       const [info, offerings] = await Promise.all([
@@ -68,7 +68,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const updateSubscriptionState = (info: CustomerInfo) => {
     const subscribed = typeof info.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
