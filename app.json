@@ -23,7 +23,8 @@
       "entitlements": {
         "com.apple.developer.associated-domains": [
           "webcredentials:tracknbook.app"
-        ]
+        ],
+        "aps-environment": "production"
       },
       "bundleIdentifier": "com.tracknbook.app",
       "buildNumber": "1",

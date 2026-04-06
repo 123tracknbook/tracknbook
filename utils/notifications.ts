@@ -19,75 +19,86 @@ Notifications.setNotificationHandler({
  * This token can be sent to your backend to send push notifications to this device
  */
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
-  console.log('Registering for push notifications...');
-  
-  // Web doesn't support Expo push notifications
-  if (Platform.OS === 'web') {
-    console.warn('Push notifications are not supported on web');
-    return undefined;
-  }
-  
-  let token: string | undefined;
+  console.log('registerForPushNotificationsAsync — starting');
 
-  // Android requires a notification channel to be created before requesting permissions
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-    console.log('Android notification channel created');
-  }
-
-  // Push notifications only work on physical devices
-  if (Device.isDevice) {
-    console.log('Device detected, checking permissions...');
-    
-    // Check existing permissions
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    
-    console.log('Existing permission status:', existingStatus);
-
-    // Request permissions if not already granted
-    if (existingStatus !== 'granted') {
-      console.log('Requesting notification permissions...');
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-      console.log('Permission request result:', status);
-    }
-
-    if (finalStatus !== 'granted') {
-      console.warn('Failed to get push notification permissions');
+  try {
+    // Web doesn't support Expo push notifications
+    if (Platform.OS === 'web') {
+      console.warn('registerForPushNotificationsAsync — web platform, skipping');
       return undefined;
     }
 
-    // Get the Expo push token
-    try {
-      const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ?? 
-        Constants?.easConfig?.projectId;
-      
-      if (!projectId) {
-        console.warn('Project ID not found in app config. Add it to app.json under extra.eas.projectId');
-        // For development, we can still get a token without projectId
+    let token: string | undefined;
+
+    // Android requires a notification channel before requesting permissions
+    if (Platform.OS === 'android') {
+      try {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+        console.log('registerForPushNotificationsAsync — Android notification channel created');
+      } catch (channelError) {
+        console.error('registerForPushNotificationsAsync — Android channel creation failed:', channelError);
+        // Non-fatal: continue to permission request
       }
-
-      const pushToken = await Notifications.getExpoPushTokenAsync({
-        projectId: projectId || undefined,
-      });
-      
-      token = pushToken.data;
-      console.log('Expo push token obtained:', token);
-    } catch (error) {
-      console.error('Error getting Expo push token:', error);
     }
-  } else {
-    console.warn('Push notifications require a physical device');
-  }
 
-  return token;
+    // Check existing permission status
+    let finalStatus: string;
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      finalStatus = existingStatus;
+      console.log('registerForPushNotificationsAsync — existing permission status:', existingStatus);
+
+      if (existingStatus !== 'granted') {
+        console.log('registerForPushNotificationsAsync — requesting permissions...');
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+        console.log('registerForPushNotificationsAsync — permission request result:', status);
+      }
+    } catch (permError) {
+      console.error('registerForPushNotificationsAsync — permission check/request failed:', permError);
+      return undefined;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.warn('registerForPushNotificationsAsync — permissions not granted, skipping token fetch');
+      return undefined;
+    }
+
+    // Push token can only be obtained on a physical device
+    if (Device.isDevice) {
+      console.log('registerForPushNotificationsAsync — physical device, fetching Expo push token...');
+      try {
+        const projectId =
+          Constants?.expoConfig?.extra?.eas?.projectId ??
+          Constants?.easConfig?.projectId;
+
+        if (!projectId) {
+          console.warn('registerForPushNotificationsAsync — projectId not found in app config (extra.eas.projectId)');
+        }
+
+        const pushToken = await Notifications.getExpoPushTokenAsync({
+          projectId: projectId || undefined,
+        });
+
+        token = pushToken.data;
+        console.log('registerForPushNotificationsAsync — Expo push token obtained:', token);
+      } catch (tokenError) {
+        console.error('registerForPushNotificationsAsync — failed to get Expo push token:', tokenError);
+      }
+    } else {
+      console.warn('registerForPushNotificationsAsync — simulator detected, push token unavailable (permissions still requested)');
+    }
+
+    return token;
+  } catch (e) {
+    console.error('registerForPushNotificationsAsync — unexpected top-level error:', e);
+    return undefined;
+  }
 }
 
 /**
