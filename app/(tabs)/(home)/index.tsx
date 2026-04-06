@@ -61,21 +61,8 @@ const injectedJavaScriptBeforeContentLoaded = `
       console.log('[WebView-JS] URL changed (poll):', _lastUrl, '->', currentUrl);
       _lastUrl = currentUrl;
       checkUrl(currentUrl);
-      if (currentUrl.includes('/calendar')) {
-        console.log('[WebView-JS] /calendar URL detected (poll), posting CALENDAR_REACHED');
-        try {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CALENDAR_REACHED' }));
-        } catch(e) {
-          console.log('[WebView-JS] postMessage CALENDAR_REACHED failed:', e);
-        }
-      }
     }
   }, 500);
-
-  // Check immediately in case the page loaded directly on /calendar
-  if (window.location.href.includes('/calendar')) {
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CALENDAR_REACHED' }));
-  }
 
   // Intercept "Change Plan" / "Upgrade" / "Subscribe" button clicks
   function interceptPlanButtons() {
@@ -381,13 +368,8 @@ export default function HomeScreen() {
         } catch (e) {
           console.warn('[RevenueCat] logIn failed (non-fatal):', e);
         }
-        return;
-      }
-      if (data.type === 'CALENDAR_REACHED') {
-        console.log('[HomeScreen] CALENDAR_REACHED received');
         if (!pushPermissionAskedRef.current) {
           pushPermissionAskedRef.current = true;
-          console.log('[HomeScreen] First /calendar visit — requesting push permissions');
           registerForPushNotificationsAsync().catch(err =>
             console.error('[HomeScreen] Push registration error:', err)
           );

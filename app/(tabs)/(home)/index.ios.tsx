@@ -57,21 +57,8 @@ const injectedJavaScriptBeforeContentLoaded = `
       console.log('[WebView-JS] URL changed (poll, iOS):', _lastUrl, '->', currentUrl);
       _lastUrl = currentUrl;
       checkAndPostPlans(currentUrl);
-      if (currentUrl.includes('/calendar')) {
-        console.log('[WebView-JS] /calendar URL detected (poll, iOS), posting CALENDAR_REACHED');
-        try {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CALENDAR_REACHED' }));
-        } catch(e) {
-          console.log('[WebView-JS] postMessage CALENDAR_REACHED failed (iOS):', e);
-        }
-      }
     }
   }, 500);
-
-  // Check immediately in case the page loaded directly on /calendar
-  if (window.location.href.includes('/calendar')) {
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CALENDAR_REACHED' }));
-  }
 
   // Intercept "Change Plan" / "Upgrade" button clicks
   function interceptPlanButtons() {
@@ -373,6 +360,12 @@ export default function HomeScreen() {
         } catch (e) {
           console.warn('[RevenueCat] logIn failed (non-fatal, iOS):', e);
         }
+        if (!pushPermissionAskedRef.current) {
+          pushPermissionAskedRef.current = true;
+          registerForPushNotificationsAsync().catch(err =>
+            console.error('[HomeScreen] Push registration error:', err)
+          );
+        }
         return;
       }
       if (data.type === 'REQUEST_PUSH_PERMISSION') {
@@ -394,17 +387,6 @@ export default function HomeScreen() {
           console.warn('[HomeScreen] REQUEST_PUSH_PERMISSION error (iOS):', e);
           const js = `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: 'denied' } })); true;`;
           webViewRef.current?.injectJavaScript(js);
-        }
-        return;
-      }
-      if (data.type === 'CALENDAR_REACHED') {
-        console.log('[HomeScreen] CALENDAR_REACHED received (iOS)');
-        if (!pushPermissionAskedRef.current) {
-          pushPermissionAskedRef.current = true;
-          console.log('[HomeScreen] First /calendar visit (iOS) — requesting push permissions');
-          registerForPushNotificationsAsync().catch(err =>
-            console.error('[HomeScreen] Push registration error (iOS):', err)
-          );
         }
         return;
       }
