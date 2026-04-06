@@ -292,9 +292,53 @@ export default function HomeScreen() {
   // Track the last RevenueCat-logged userId so we don't call logIn redundantly
   // across WebView reloads within the same native session.
   const rcLoggedUserIdRef = useRef<string | null>(null);
+  // Track whether we've already dispatched the push permission result to the WebView
+  const pushPermissionInjectedRef = useRef(false);
 
   useEffect(() => {
     console.log('[HomeScreen] mounted (iOS) - WebView URL:', webAppUrl);
+  }, []);
+
+  // Request push notification permissions on mount — completely decoupled from
+  // the WebView load cycle so it fires reliably on iOS.
+  useEffect(() => {
+    let cancelled = false;
+    async function requestPushPermissions() {
+      console.log('[HomeScreen] useEffect push permissions — starting (iOS)');
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        console.log('[HomeScreen] useEffect push permissions — current status (iOS):', existingStatus);
+        let finalStatus = existingStatus;
+        if (existingStatus === 'undetermined') {
+          console.log('[HomeScreen] useEffect push permissions — status undetermined, calling requestPermissionsAsync (iOS)');
+          const { status } = await Notifications.requestPermissionsAsync({
+            ios: {
+              allowAlert: true,
+              allowBadge: true,
+              allowSound: true,
+            },
+          });
+          finalStatus = status;
+          console.log('[HomeScreen] useEffect push permissions — requestPermissionsAsync result (iOS):', finalStatus);
+        } else {
+          console.log('[HomeScreen] useEffect push permissions — already determined (iOS):', existingStatus, '— skipping prompt');
+        }
+        if (cancelled) {
+          console.log('[HomeScreen] useEffect push permissions — component unmounted, skipping WebView inject (iOS)');
+          return;
+        }
+        const resultStatus = finalStatus === 'granted' ? 'granted' : 'denied';
+        console.log('[HomeScreen] useEffect push permissions — injecting nativePushPermissionResult into WebView (iOS), status:', resultStatus);
+        pushPermissionInjectedRef.current = true;
+        webViewRef.current?.injectJavaScript(
+          `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`
+        );
+      } catch (e) {
+        console.warn('[HomeScreen] useEffect push permissions — error (iOS):', e);
+      }
+    }
+    requestPushPermissions();
+    return () => { cancelled = true; };
   }, []);
 
   // When the home screen comes into focus (e.g. after returning from paywall),
@@ -426,32 +470,23 @@ export default function HomeScreen() {
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
-    // Check/request push notification permissions and sync result to WebView.
+    // Re-inject the push permission result on subsequent WebView loads (e.g. SPA navigation,
+    // page refresh). The initial request is handled by the useEffect on mount.
+    // If the useEffect hasn't fired yet (WebView loaded very fast), skip — it will inject shortly.
     try {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      console.log('[HomeScreen] onLoadEnd (iOS) — current push permission status:', existingStatus);
-      let finalStatus = existingStatus;
-      if (existingStatus === 'undetermined') {
-        console.log('[HomeScreen] onLoadEnd (iOS) — status is undetermined, requesting push permissions');
-        const { status } = await Notifications.requestPermissionsAsync({
-          ios: {
-            allowAlert: true,
-            allowBadge: true,
-            allowSound: true,
-          },
-        });
-        finalStatus = status;
-        console.log('[HomeScreen] onLoadEnd (iOS) — push permission result:', finalStatus);
+      console.log('[HomeScreen] onLoadEnd (iOS) — push permission status:', existingStatus);
+      if (existingStatus !== 'undetermined') {
+        const resultStatus = existingStatus === 'granted' ? 'granted' : 'denied';
+        console.log('[HomeScreen] onLoadEnd (iOS) — re-injecting nativePushPermissionResult into WebView, status:', resultStatus);
+        webViewRef.current?.injectJavaScript(
+          `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`
+        );
       } else {
-        console.log('[HomeScreen] onLoadEnd (iOS) — push permission already', existingStatus, '— skipping prompt');
+        console.log('[HomeScreen] onLoadEnd (iOS) — status still undetermined, useEffect will handle the prompt');
       }
-      const resultStatus = finalStatus === 'granted' ? 'granted' : 'denied';
-      console.log('[HomeScreen] onLoadEnd (iOS) — injecting nativePushPermissionResult into WebView, status:', resultStatus);
-      webViewRef.current?.injectJavaScript(
-        `window.dispatchEvent(new CustomEvent('nativePushPermissionResult', { detail: { status: '${resultStatus}' } })); true;`
-      );
     } catch (e) {
-      console.warn('[HomeScreen] onLoadEnd (iOS) — push permission check/request error:', e);
+      console.warn('[HomeScreen] onLoadEnd (iOS) — push permission status check error:', e);
     }
   };
 
