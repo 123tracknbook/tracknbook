@@ -40,7 +40,8 @@ export default function RootLayout() {
         console.log('[Layout] Checking notification permissions...');
         const { status } = await Notifications.getPermissionsAsync();
         console.log('[Layout] Current notification status:', status);
-        if (status === 'undetermined') {
+        console.log('[Layout] Full permission object:', JSON.stringify(await Notifications.getPermissionsAsync()));
+        if (status !== 'granted') {
           console.log('[Layout] Requesting notification permissions...');
           const result = await Notifications.requestPermissionsAsync();
           console.log('[Layout] Permission result:', result.status);

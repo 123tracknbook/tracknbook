@@ -86,7 +86,8 @@
         {
           "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
           "color": "#000000",
-          "sounds": []
+          "sounds": [],
+          "requestPermissionsOnLaunch": true
         }
       ],
       [

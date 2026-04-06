@@ -304,13 +304,14 @@ export default function HomeScreen() {
   useEffect(() => {
     let cancelled = false;
     async function requestPushPermissions() {
+      console.log('[HomeScreen] requestPushPermissions called (iOS)');
       console.log('[HomeScreen] useEffect push permissions — starting (iOS)');
       try {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         console.log('[HomeScreen] useEffect push permissions — current status (iOS):', existingStatus);
         let finalStatus = existingStatus;
-        if (existingStatus === 'undetermined') {
-          console.log('[HomeScreen] useEffect push permissions — status undetermined, calling requestPermissionsAsync (iOS)');
+        if (existingStatus !== 'granted') {
+          console.log('[HomeScreen] useEffect push permissions — status not granted, calling requestPermissionsAsync (iOS)');
           const { status } = await Notifications.requestPermissionsAsync({
             ios: {
               allowAlert: true,
@@ -321,7 +322,7 @@ export default function HomeScreen() {
           finalStatus = status;
           console.log('[HomeScreen] useEffect push permissions — requestPermissionsAsync result (iOS):', finalStatus);
         } else {
-          console.log('[HomeScreen] useEffect push permissions — already determined (iOS):', existingStatus, '— skipping prompt');
+          console.log('[HomeScreen] useEffect push permissions — already granted (iOS):', existingStatus, '— skipping prompt');
         }
         if (cancelled) {
           console.log('[HomeScreen] useEffect push permissions — component unmounted, skipping WebView inject (iOS)');
