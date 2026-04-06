@@ -57,8 +57,21 @@ const injectedJavaScriptBeforeContentLoaded = `
       console.log('[WebView-JS] URL changed (poll, iOS):', _lastUrl, '->', currentUrl);
       _lastUrl = currentUrl;
       checkAndPostPlans(currentUrl);
+      if (currentUrl.includes('/calendar')) {
+        console.log('[WebView-JS] /calendar URL detected (poll, iOS), posting CALENDAR_REACHED');
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CALENDAR_REACHED' }));
+        } catch(e) {
+          console.log('[WebView-JS] postMessage CALENDAR_REACHED failed (iOS):', e);
+        }
+      }
     }
   }, 500);
+
+  // Check immediately in case the page loaded directly on /calendar
+  if (window.location.href.includes('/calendar')) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CALENDAR_REACHED' }));
+  }
 
   // Intercept "Change Plan" / "Upgrade" button clicks
   function interceptPlanButtons() {
@@ -384,6 +397,17 @@ export default function HomeScreen() {
         }
         return;
       }
+      if (data.type === 'CALENDAR_REACHED') {
+        console.log('[HomeScreen] CALENDAR_REACHED received (iOS)');
+        if (!pushPermissionAskedRef.current) {
+          pushPermissionAskedRef.current = true;
+          console.log('[HomeScreen] First /calendar visit (iOS) — requesting push permissions');
+          registerForPushNotificationsAsync().catch(err =>
+            console.error('[HomeScreen] Push registration error (iOS):', err)
+          );
+        }
+        return;
+      }
       if (data.type === 'AUTH_SIGNED_OUT' || data.type === 'SIGN_OUT') {
         console.log('[HomeScreen]', data.type, '(iOS) — calling Purchases.logOut');
         try {
@@ -408,17 +432,6 @@ export default function HomeScreen() {
       console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest (iOS) — pushing paywall');
       router.push('/paywall');
       return false;
-    }
-    if (url.includes('/calendar') && !pushPermissionAskedRef.current) {
-      pushPermissionAskedRef.current = true;
-      console.log('[HomeScreen] /calendar URL detected (iOS) — requesting push permissions for the first time');
-      registerForPushNotificationsAsync()
-        .then((token) => {
-          console.log('[HomeScreen] Push registration complete (iOS), token:', token ?? 'none');
-        })
-        .catch((err) => {
-          console.warn('[HomeScreen] Push registration error (iOS):', err);
-        });
     }
     return true;
   };
