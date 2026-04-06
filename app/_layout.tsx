@@ -16,8 +16,6 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
-import { registerForPushNotificationsAsync } from '@/utils/notifications';
-import * as Notifications from 'expo-notifications';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -32,37 +30,6 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
-
-  // Direct inline permission request — no abstraction layer, fires unconditionally.
-  useEffect(() => {
-    (async () => {
-      try {
-        console.log('[Layout] Checking notification permissions...');
-        const { status } = await Notifications.getPermissionsAsync();
-        console.log('[Layout] Current notification status:', status);
-        console.log('[Layout] Full permission object:', JSON.stringify(await Notifications.getPermissionsAsync()));
-        if (status !== 'granted') {
-          console.log('[Layout] Requesting notification permissions...');
-          const result = await Notifications.requestPermissionsAsync();
-          console.log('[Layout] Permission result:', result.status);
-        }
-      } catch (e) {
-        console.error('[Layout] Notification permission error:', e);
-      }
-    })();
-  }, []);
-
-  // Full registration flow (token fetch, Android channel, etc.) via utility.
-  useEffect(() => {
-    console.log('[RootLayout] Requesting push notification permissions on launch');
-    registerForPushNotificationsAsync()
-      .then((token) => {
-        console.log('[RootLayout] Push notification token:', token ?? 'undefined (simulator or denied)');
-      })
-      .catch((err) => {
-        console.error('[RootLayout] Push notification registration error:', err);
-      });
-  }, []);
 
   useEffect(() => {
     console.log('RootLayout mounted, fonts loaded:', loaded);
