@@ -33,9 +33,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     console.log('RootLayout mounted, fonts loaded:', loaded);
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
+    // Splash screen is kept visible until the WebView fires onLoadEnd.
+    // Nothing to do here — SplashScreen.hideAsync() is called by the home screen.
   }, [loaded]);
 
   if (!loaded) {

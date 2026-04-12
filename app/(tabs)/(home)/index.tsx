@@ -1,10 +1,11 @@
 
 import { WebView } from "react-native-webview";
 import { Stack, useRouter } from "expo-router";
-import { StyleSheet, View, ActivityIndicator, Platform, Text } from "react-native";
+import { StyleSheet, View, Platform, Text } from "react-native";
 import { useTheme } from "@react-navigation/native";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
+import * as SplashScreen from "expo-splash-screen";
 import Purchases from "react-native-purchases";
 import * as Notifications from "expo-notifications";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
 
 export default function HomeScreen() {
   console.log('[HomeScreen] rendering - Platform:', Platform.OS);
-  const [loading, setLoading] = useState(true);
+  const splashHiddenRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
   const router = useRouter();
@@ -417,15 +418,22 @@ export default function HomeScreen() {
     return true;
   };
 
+  const hideSplash = () => {
+    if (!splashHiddenRef.current) {
+      splashHiddenRef.current = true;
+      console.log('[HomeScreen] Hiding splash screen');
+      SplashScreen.hideAsync().catch(e => console.warn('[HomeScreen] SplashScreen.hideAsync error:', e));
+    }
+  };
+
   const handleLoadStart = () => {
     console.log('[HomeScreen] WebView load started');
-    setLoading(true);
     setError(null);
   };
 
   const handleLoadEnd = async () => {
     console.log('[HomeScreen] WebView load ended');
-    setLoading(false);
+    hideSplash();
     setError(null);
     // Inject any pending URL immediately — the web app handles polling via ?purchase=1.
     if (pendingWebViewUrl) {
@@ -441,13 +449,13 @@ export default function HomeScreen() {
     console.error('[HomeScreen] WebView error:', JSON.stringify(nativeEvent, null, 2));
     const errorMessage = nativeEvent.description || nativeEvent.code || 'Unknown error';
     setError(`Failed to load: ${errorMessage}`);
-    setLoading(false);
+    hideSplash();
   };
 
   const handleHttpError = (syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
     console.error('[HomeScreen] WebView HTTP error:', nativeEvent.statusCode, nativeEvent.url);
-    setLoading(false);
+    hideSplash();
   };
 
   const errorTextColor = colors.text;
@@ -501,14 +509,7 @@ export default function HomeScreen() {
             contentMode="mobile"
           />
 
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#5B5BFF" />
-              <Text style={styles.loadingText}>
-                Loading TrackNBook...
-              </Text>
-            </View>
-          )}
+
         </>
       )}
     </View>
