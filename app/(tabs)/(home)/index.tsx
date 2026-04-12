@@ -3,7 +3,7 @@ import { WebView } from "react-native-webview";
 import { Stack, useRouter } from "expo-router";
 import { StyleSheet, View, Platform, Text } from "react-native";
 import { useTheme } from "@react-navigation/native";
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import * as SplashScreen from "expo-splash-screen";
 import Purchases from "react-native-purchases";
