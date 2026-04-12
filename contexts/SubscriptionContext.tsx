@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import Purchases, { CustomerInfo, PurchasesOffering } from 'react-native-purchases';
-import RevenueCatUI, { presentCustomerCenter } from 'react-native-purchases-ui';
+import { presentCustomerCenter } from 'react-native-purchases-ui';
 
 const API_KEY = 'appl_VvUEhtaTtsgThAClFhpGuUaFcdc';
 const ENTITLEMENT_ID = 'pro';
@@ -27,25 +27,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [currentOffering, setCurrentOffering] = useState<PurchasesOffering | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    console.log('[SubscriptionContext] Initializing RevenueCat');
-    if (Platform.OS === 'web') {
-      console.log('[SubscriptionContext] Web platform detected, skipping RevenueCat init');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      Purchases.configure({ apiKey: API_KEY });
-      console.log('[SubscriptionContext] RevenueCat configured successfully with key:', API_KEY);
-    } catch (e) {
-      console.error('[SubscriptionContext] Failed to configure RevenueCat:', e);
-      setIsLoading(false);
-      return;
-    }
-
-    loadData();
-  }, [loadData]);
+  const updateSubscriptionState = useCallback((info: CustomerInfo) => {
+    const subscribed = typeof info.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
+    console.log('[SubscriptionContext] Subscription state updated — isSubscribed:', subscribed);
+    setCustomerInfo(info);
+    setIsSubscribed(subscribed);
+  }, []);
 
   const loadData = useCallback(async () => {
     console.log('[SubscriptionContext] Loading customer info and offerings');
@@ -68,14 +55,25 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [updateSubscriptionState]);
 
-  const updateSubscriptionState = (info: CustomerInfo) => {
-    const subscribed = typeof info.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
-    console.log('[SubscriptionContext] Subscription state updated — isSubscribed:', subscribed);
-    setCustomerInfo(info);
-    setIsSubscribed(subscribed);
-  };
+  useEffect(() => {
+    console.log('[SubscriptionContext] Initializing RevenueCat');
+    if (Platform.OS === 'web') {
+      console.log('[SubscriptionContext] Web platform detected, skipping RevenueCat init');
+      setIsLoading(false);
+      return;
+    }
+    try {
+      Purchases.configure({ apiKey: API_KEY });
+      console.log('[SubscriptionContext] RevenueCat configured successfully with key:', API_KEY);
+    } catch (e) {
+      console.error('[SubscriptionContext] Failed to configure RevenueCat:', e);
+      setIsLoading(false);
+      return;
+    }
+    loadData();
+  }, [loadData]);
 
   const refreshCustomerInfo = useCallback(async () => {
     console.log('[SubscriptionContext] Refreshing customer info');
@@ -85,7 +83,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } catch (e) {
       console.error('[SubscriptionContext] Error refreshing customer info:', e);
     }
-  }, []);
+  }, [updateSubscriptionState]);
 
   const purchasePackage = useCallback(async (pkg: import('react-native-purchases').PurchasesPackage): Promise<boolean> => {
     console.log('[SubscriptionContext] Purchasing package:', pkg.identifier);
@@ -103,7 +101,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       }
       return false;
     }
-  }, []);
+  }, [updateSubscriptionState]);
 
   const restorePurchases = useCallback(async () => {
     console.log('[SubscriptionContext] Restoring purchases');
@@ -114,7 +112,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } catch (e) {
       console.error('[SubscriptionContext] Restore error:', e);
     }
-  }, []);
+  }, [updateSubscriptionState]);
 
   const openPaywall = useCallback(() => {
     console.log('[SubscriptionContext] openPaywall called');

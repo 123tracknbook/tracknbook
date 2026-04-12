@@ -16,7 +16,7 @@ import Purchases, { PurchasesOffering } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
 import type { CustomerInfo } from 'react-native-purchases';
 import type { PurchasesError } from 'react-native-purchases';
-import { setPendingWebViewUrl, webViewRef, currentRcUserId, setCurrentRcUserId } from '@/app/(tabs)/(home)/webViewRef';
+import { setPendingWebViewUrl, webViewRef, currentRcUserId, setCurrentRcUserId } from '@/utils/webViewRef';
 
 const TERMS_URL = 'https://www.tracknbook.com/terms-and-conditions';
 const PRIVACY_URL = 'https://www.tracknbook.com/privacy-policy';

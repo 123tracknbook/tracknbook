@@ -9,7 +9,7 @@ import * as SplashScreen from "expo-splash-screen";
 import Purchases from "react-native-purchases";
 import * as Notifications from "expo-notifications";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
-import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "./webViewRef";
+import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
 
 const webAppUrl = "https://www.tracknbook.app";
@@ -168,7 +168,6 @@ const injectedJavaScript = `
   setTimeout(debugStorageDump, 2000);
 
   function getSupabaseUserId() {
-    try {
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);

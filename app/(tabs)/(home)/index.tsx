@@ -7,9 +7,8 @@ import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import * as SplashScreen from "expo-splash-screen";
 import Purchases from "react-native-purchases";
-import * as Notifications from "expo-notifications";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
-import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "./webViewRef";
+import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
 
 const webAppUrl = "https://www.tracknbook.app";
@@ -175,7 +174,6 @@ const injectedJavaScript = `
 
   function getSupabaseUserId() {
     try {
-    try {
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
         if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
@@ -333,8 +331,8 @@ export default function HomeScreen() {
         console.log('[Auth Debug]', JSON.stringify(data, null, 2));
         return;
       }
-      if (data.type === 'INTERCEPT_URL') {
-        console.log('[HomeScreen] INTERCEPT_URL — pushing subscriptions paywall');
+      if (data.type === 'INTERCEPT_URL' || data.type === 'OPEN_PAYWALL') {
+        console.log('[HomeScreen] Paywall trigger — type:', data.type, '— pushing subscriptions paywall');
         router.push('/paywall?offeringId=subscriptions');
         return;
       }

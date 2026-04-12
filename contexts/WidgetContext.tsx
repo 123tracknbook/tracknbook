@@ -1,11 +1,6 @@
 import * as React from "react";
 import { createContext, useCallback, useContext } from "react";
-import { ExtensionStorage } from "@bacons/apple-targets";
-
-// Initialize storage with your group ID
-const storage = new ExtensionStorage(
-  "group.com.<user_name>.<app_name>"
-);
+import { Platform } from "react-native";
 
 type WidgetContextType = {
   refreshWidget: () => void;
@@ -13,18 +8,27 @@ type WidgetContextType = {
 
 const WidgetContext = createContext<WidgetContextType | null>(null);
 
-export function WidgetProvider({ children }: { children: React.ReactNode }) {
-  // Update widget state whenever what we want to show changes
-  React.useEffect(() => {
-    // set widget_state to null if we want to reset the widget
-    // storage.set("widget_state", null);
-
-    // Refresh widget
+// Safe no-op reload — only calls into @bacons/apple-targets on iOS native builds.
+// The module is always present in the bundle but reloadWidget() is a no-op on
+// Android/web and when no widget extension is linked.
+function safeReloadWidget() {
+  if (Platform.OS !== "ios") return;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ExtensionStorage } = require("@bacons/apple-targets") as typeof import("@bacons/apple-targets");
     ExtensionStorage.reloadWidget();
+  } catch {
+    // Non-fatal: widget extension not linked in this build
+  }
+}
+
+export function WidgetProvider({ children }: { children: React.ReactNode }) {
+  React.useEffect(() => {
+    safeReloadWidget();
   }, []);
 
   const refreshWidget = useCallback(() => {
-    ExtensionStorage.reloadWidget();
+    safeReloadWidget();
   }, []);
 
   return (
