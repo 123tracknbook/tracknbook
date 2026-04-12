@@ -3,7 +3,7 @@
     "name": "TracknBook",
     "slug": "tracknbook",
     "owner": "tracknbook",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
@@ -27,7 +27,7 @@
         "aps-environment": "production"
       },
       "bundleIdentifier": "com.tracknbook.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
