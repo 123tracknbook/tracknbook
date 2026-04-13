@@ -88,14 +88,6 @@
       "bundler": "metro"
     },
     "plugins": [
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/tracknbook-splash-1290x2796.png",
-          "resizeMode": "cover",
-          "enableFullScreenImage_legacy": true
-        }
-      ],
       "expo-font",
       "expo-router",
       "expo-apple-authentication",
