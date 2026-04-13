@@ -93,8 +93,7 @@
         {
           "backgroundColor": "#0a1f2e",
           "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
-          "resizeMode": "cover",
-          "imageWidth": 430
+          "resizeMode": "cover"
         }
       ],
       "expo-font",
