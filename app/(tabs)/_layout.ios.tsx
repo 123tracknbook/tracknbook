@@ -41,11 +41,8 @@ export default function TabLayout() {
           },
         }}
       >
-        {/* href: null is expo-router's built-in way to hide a tab:
-            it sets tabBarItemStyle: { display: 'none' } AND returns null
-            from tabBarButton, so no button or space is rendered. */}
-        <Tabs.Screen name="(home)" options={{ href: null }} />
-        <Tabs.Screen name="profile" options={{ href: null }} />
+        <Tabs.Screen name="(home)" options={{ tabBarButton: () => null }} />
+        <Tabs.Screen name="profile" options={{ tabBarButton: () => null }} />
       </Tabs>
       <FloatingTabBar tabs={TABS} />
     </View>
