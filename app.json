@@ -83,12 +83,15 @@
       "bundler": "metro"
     },
     "plugins": [
-      ["expo-splash-screen", {
-        "backgroundColor": "#1a2332",
-        "image": "./assets/images/850848d5-4f4e-444a-afaf-ba5f67ecf49b.png",
-        "imageWidth": 200,
-        "resizeMode": "cover"
-      }],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1a2332",
+          "image": "./assets/images/850848d5-4f4e-444a-afaf-ba5f67ecf49b.png",
+          "imageWidth": 400,
+          "resizeMode": "cover"
+        }
+      ],
       "expo-font",
       "expo-router",
       "expo-apple-authentication",

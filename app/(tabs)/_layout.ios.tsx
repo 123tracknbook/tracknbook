@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Slot } from 'expo-router';
+import { Tabs } from 'expo-router';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import type { TabBarItem } from '@/components/FloatingTabBar';
 
@@ -25,15 +24,9 @@ const TABS: TabBarItem[] = [
 export default function TabLayout() {
   console.log('[TabLayout] rendering (iOS)');
   return (
-    <View style={styles.container}>
-      <Slot />
-      <FloatingTabBar tabs={TABS} />
-    </View>
+    <Tabs
+      tabBar={() => <FloatingTabBar tabs={TABS} />}
+      screenOptions={{ headerShown: false }}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
