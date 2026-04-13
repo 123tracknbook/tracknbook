@@ -8,18 +8,18 @@
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/03e57ad6-8104-403a-b564-6b5fe0c8b0a2.png",
+      "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
       "resizeMode": "cover",
-      "backgroundColor": "#1a2332"
+      "backgroundColor": "#0a1f2e"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "splash": {
-        "image": "./assets/images/03e57ad6-8104-403a-b564-6b5fe0c8b0a2.png",
+        "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
         "resizeMode": "cover",
-        "backgroundColor": "#1a2332"
+        "backgroundColor": "#0a1f2e"
       },
       "supportsTablet": true,
       "associatedDomains": [
@@ -58,6 +58,11 @@
       }
     },
     "android": {
+      "splash": {
+        "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#0a1f2e"
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
         "backgroundColor": "#000000"
@@ -86,8 +91,8 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#1a2332",
-          "image": "./assets/images/03e57ad6-8104-403a-b564-6b5fe0c8b0a2.png",
+          "backgroundColor": "#0a1f2e",
+          "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
           "resizeMode": "cover"
         }
       ],

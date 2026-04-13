@@ -40,10 +40,10 @@ export default function RootLayout() {
   if (!loaded) {
     console.log('Fonts not loaded yet, showing splash screen');
     return (
-      <View style={[StyleSheet.absoluteFillObject, { flex: 1, backgroundColor: '#1a2332' }]}>
+      <View style={[StyleSheet.absoluteFillObject, { flex: 1, backgroundColor: '#0a1f2e' }]}>
         <Image
-          source={require('../assets/images/03e57ad6-8104-403a-b564-6b5fe0c8b0a2.png')}
-          style={{ width: '100%', height: '100%' }}
+          source={require('../assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png')}
+          style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
           resizeMode="cover"
         />
       </View>
