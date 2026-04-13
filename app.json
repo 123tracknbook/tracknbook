@@ -8,7 +8,7 @@
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/850848d5-4f4e-444a-afaf-ba5f67ecf49b.png",
+      "image": "./assets/images/03e57ad6-8104-403a-b564-6b5fe0c8b0a2.png",
       "resizeMode": "cover",
       "backgroundColor": "#1a2332"
     },
@@ -17,7 +17,7 @@
     ],
     "ios": {
       "splash": {
-        "image": "./assets/images/850848d5-4f4e-444a-afaf-ba5f67ecf49b.png",
+        "image": "./assets/images/03e57ad6-8104-403a-b564-6b5fe0c8b0a2.png",
         "resizeMode": "cover",
         "backgroundColor": "#1a2332"
       },
@@ -87,8 +87,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#1a2332",
-          "image": "./assets/images/850848d5-4f4e-444a-afaf-ba5f67ecf49b.png",
-          "imageWidth": 1290,
+          "image": "./assets/images/03e57ad6-8104-403a-b564-6b5fe0c8b0a2.png",
           "resizeMode": "cover"
         }
       ],
