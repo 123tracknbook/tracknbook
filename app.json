@@ -91,9 +91,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0a1f2e",
           "image": "./assets/images/tracknbook-splash-1290x2796.png",
-          "resizeMode": "cover"
+          "resizeMode": "cover",
+          "enableFullScreenImage_legacy": true
         }
       ],
       "expo-font",
