@@ -8,7 +8,7 @@
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
+      "image": "./assets/images/18b13a2b-4e8e-4583-b151-1f848a60e306.png",
       "resizeMode": "cover",
       "backgroundColor": "#0a1f2e"
     },
@@ -17,7 +17,7 @@
     ],
     "ios": {
       "splash": {
-        "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
+        "image": "./assets/images/18b13a2b-4e8e-4583-b151-1f848a60e306.png",
         "resizeMode": "cover",
         "backgroundColor": "#0a1f2e"
       },
@@ -59,7 +59,7 @@
     },
     "android": {
       "splash": {
-        "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
+        "image": "./assets/images/18b13a2b-4e8e-4583-b151-1f848a60e306.png",
         "resizeMode": "cover",
         "backgroundColor": "#0a1f2e"
       },
@@ -92,7 +92,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0a1f2e",
-          "image": "./assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png",
+          "image": "./assets/images/18b13a2b-4e8e-4583-b151-1f848a60e306.png",
           "resizeMode": "cover"
         }
       ],
