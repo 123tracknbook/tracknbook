@@ -6,7 +6,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, View } from "react-native";
+import { useColorScheme, View, StyleSheet } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -42,12 +42,8 @@ export default function RootLayout() {
     return (
       <View
         style={{
+          ...StyleSheet.absoluteFillObject,
           flex: 1,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
           backgroundColor: '#1a2332',
         }}
       />
