@@ -6,7 +6,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, View, StyleSheet, Image } from "react-native";
+import { useColorScheme, View } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -39,15 +39,7 @@ export default function RootLayout() {
 
   if (!loaded) {
     console.log('Fonts not loaded yet, showing splash screen');
-    return (
-      <View style={[StyleSheet.absoluteFillObject, { flex: 1, backgroundColor: '#0a1f2e' }]}>
-        <Image
-          source={require('../assets/images/c5067410-1c3a-4583-98bd-d6ca0dd5df9e.png')}
-          style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
-          resizeMode="cover"
-        />
-      </View>
-    );
+    return <View style={{ flex: 1, backgroundColor: '#0a1f2e' }} />;
   }
 
   console.log('RootLayout rendering with color scheme:', colorScheme);
