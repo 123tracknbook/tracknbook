@@ -282,8 +282,15 @@ export default function HomeScreen() {
         return;
       }
 
-      if (data.type === 'OPEN_PAYWALL') {
-        console.log('[HomeScreen] OPEN_PAYWALL received — navigating to paywall');
+      if (
+        data.type === 'OPEN_PAYWALL' ||
+        data.type === 'SHOW_PAYWALL' ||
+        data.type === 'OPEN_PLANS' ||
+        data.type === 'UPGRADE' ||
+        data.type === 'CHOOSE_PLAN' ||
+        data.type === 'CHANGE_PLAN'
+      ) {
+        console.log('[HomeScreen] Paywall trigger received type:', data.type, '— navigating to paywall');
         router.push('/paywall');
         return;
       }
@@ -294,6 +301,9 @@ export default function HomeScreen() {
         pushPermissionAskedRef.current = false;
         return;
       }
+
+      // Debug: log any unhandled message type so we can see what the web app is sending
+      console.log('[HomeScreen] UNHANDLED message type:', data.type, '| full data:', JSON.stringify(data));
     } catch (e) {
       console.log('[HomeScreen] onMessage JSON parse failed, raw was:', raw);
     }
