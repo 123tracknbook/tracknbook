@@ -1,6 +1,6 @@
 
 import { WebView } from "react-native-webview";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -16,93 +16,10 @@ import * as Clipboard from 'expo-clipboard';
 
 const webAppUrl = "https://www.tracknbook.app";
 
-// JS injected before page content loads — intercepts SPA navigation to /plans
+// JS injected before page content loads — tags inputs for autofill
 const injectedJavaScriptBeforeContentLoaded = `
 (function() {
   console.log('[WebView-JS] injectedJavaScriptBeforeContentLoaded running (iOS)');
-
-  function checkAndPostPlans(url) {
-    if (url && url.includes('/plans')) {
-      console.log('[WebView-JS] /plans URL detected (iOS), posting INTERCEPT_URL:', url);
-      try {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'INTERCEPT_URL', url: url }));
-      } catch(e) {
-        console.log('[WebView-JS] postMessage failed (iOS):', e);
-      }
-    }
-  }
-
-  // Patch history API for SPA navigation
-  var _origPushState = history.pushState;
-  var _origReplaceState = history.replaceState;
-
-  history.pushState = function() {
-    _origPushState.apply(this, arguments);
-    console.log('[WebView-JS] history.pushState (iOS), new URL:', window.location.href);
-    checkAndPostPlans(window.location.href);
-  };
-
-  history.replaceState = function() {
-    _origReplaceState.apply(this, arguments);
-    console.log('[WebView-JS] history.replaceState (iOS), new URL:', window.location.href);
-    checkAndPostPlans(window.location.href);
-  };
-
-  window.addEventListener('popstate', function() {
-    console.log('[WebView-JS] popstate (iOS), URL:', window.location.href);
-    checkAndPostPlans(window.location.href);
-  });
-
-  // Polling fallback every 500ms
-  var _lastUrl = window.location.href;
-  setInterval(function() {
-    var currentUrl = window.location.href;
-    if (currentUrl !== _lastUrl) {
-      console.log('[WebView-JS] URL changed (poll, iOS):', _lastUrl, '->', currentUrl);
-      _lastUrl = currentUrl;
-      checkAndPostPlans(currentUrl);
-    }
-  }, 500);
-
-  // Intercept "Change Plan" / "Upgrade" button clicks
-  function interceptPlanButtons() {
-    var elements = document.querySelectorAll('a[href*="/plans"], a[href*="plan"], button');
-    elements.forEach(function(el) {
-      var text = (el.textContent || '').trim().toLowerCase();
-      var href = el.getAttribute('href') || '';
-      var isPlansLink = href.includes('/plans');
-      var isPlanButton = text.includes('change plan') || text.includes('upgrade') || text.includes('get pro') || text.includes('subscribe');
-      if ((isPlansLink || isPlanButton) && !el.dataset.nativeIntercepted) {
-        el.dataset.nativeIntercepted = 'true';
-        console.log('[WebView-JS] Intercepting plan button/link (iOS):', text || href);
-        el.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('[WebView-JS] Plan button clicked (iOS), posting OPEN_PAYWALL');
-          try {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_PAYWALL' }));
-          } catch(err) {
-            console.log('[WebView-JS] postMessage failed on click (iOS):', err);
-          }
-        }, true);
-      }
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('[WebView-JS] DOMContentLoaded (iOS) — running interceptPlanButtons');
-    interceptPlanButtons();
-    var observer = new MutationObserver(function() { interceptPlanButtons(); });
-    observer.observe(document.body, { childList: true, subtree: true });
-  });
-
-  if (document.readyState !== 'loading') {
-    console.log('[WebView-JS] DOM already ready (iOS) — running interceptPlanButtons immediately');
-    interceptPlanButtons();
-  }
-
-  // Check current URL immediately in case we loaded directly on /plans
-  checkAndPostPlans(window.location.href);
 })();
 true;
 `;
@@ -292,7 +209,6 @@ export default function HomeScreen() {
   const splashHiddenRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
-  const router = useRouter();
   // Ensures push permission is requested exactly once, the first time /calendar is visited.
   const pushPermissionAskedRef = useRef(false);
 
@@ -335,17 +251,7 @@ export default function HomeScreen() {
         console.log('[Auth Debug]', JSON.stringify(data, null, 2));
         return;
       }
-      if (
-        data.type === 'INTERCEPT_URL' ||
-        data.type === 'OPEN_PAYWALL' ||
-        data.type === 'openPaywall' ||
-        data.type === 'upgrade' ||
-        data.type === 'choosePlan'
-      ) {
-        console.log('[HomeScreen] Paywall trigger (iOS) — type:', data.type, '— calling router.push("/paywall")');
-        router.push('/paywall');
-        return;
-      }
+
       if (data.type === 'AUTH_SIGNED_IN' && data.userId) {
         console.log('[HomeScreen] AUTH_SIGNED_IN (iOS) — userId:', data.userId);
         if (!pushPermissionAskedRef.current) {
@@ -428,11 +334,6 @@ export default function HomeScreen() {
       Linking.openURL(url).catch(e =>
         console.warn('[HomeScreen] Linking.openURL failed (iOS) for:', url, e)
       );
-      return false;
-    }
-    if (url.includes('/plans')) {
-      console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest (iOS) — pushing paywall');
-      router.push('/paywall');
       return false;
     }
     return true;
