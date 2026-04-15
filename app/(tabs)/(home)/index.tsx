@@ -220,11 +220,11 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // Helper: post a PUSH_TOKEN message back to the WebView (spec-compliant format)
+  // Helper: dispatch expoPushToken CustomEvent to the WebView
   const sendPushTokenToWebView = useCallback((token: string | null | undefined) => {
     const tokenValue = token ?? null;
     console.log('[HomeScreen] sendPushTokenToWebView — token:', tokenValue);
-    const js = `window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PUSH_TOKEN', token: ${JSON.stringify(tokenValue)} })); true;`;
+    const js = `window.dispatchEvent(new CustomEvent('expoPushToken', { detail: { token: ${JSON.stringify(tokenValue)} } })); true;`;
     webViewRef.current?.injectJavaScript(js);
   }, []);
 
@@ -256,8 +256,8 @@ export default function HomeScreen() {
         return;
       }
 
-      if (data.type === 'REGISTER_PUSH_NOTIFICATIONS') {
-        console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS received — registering and fetching token');
+      if (data.type === 'GET_PUSH_TOKEN' || data.type === 'REGISTER_PUSH_NOTIFICATIONS') {
+        console.log('[HomeScreen]', data.type, 'received — registering and fetching token');
         try {
           const token = await registerForPushNotificationsAsync();
           console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS token:', token);
