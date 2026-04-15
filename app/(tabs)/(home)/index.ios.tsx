@@ -4,7 +4,7 @@ import { Stack, useRouter } from "expo-router";
 import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View, Text, Linking } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import Purchases from "react-native-purchases";
 import * as Notifications from "expo-notifications";
@@ -423,6 +423,15 @@ export default function HomeScreen() {
   const handleShouldStartLoadWithRequest = (request: any) => {
     const url = request.url;
     console.log('[HomeScreen] onShouldStartLoadWithRequest (iOS):', url);
+    // Hand off non-http(s) schemes to iOS instead of letting WKWebView load them
+    // (avoids NSURLErrorDomain -1002 for mailto:, tel:, sms:, facetime:, etc.)
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      console.log('[HomeScreen] Non-http(s) scheme detected (iOS), opening externally via Linking:', url);
+      Linking.openURL(url).catch(e =>
+        console.warn('[HomeScreen] Linking.openURL failed (iOS) for:', url, e)
+      );
+      return false;
+    }
     if (url.includes('/plans')) {
       console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest (iOS) — pushing paywall');
       router.push('/paywall');

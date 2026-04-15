@@ -1,7 +1,7 @@
 
 import { WebView } from "react-native-webview";
 import { Stack, useRouter } from "expo-router";
-import { StyleSheet, View, Platform, Text } from "react-native";
+import { StyleSheet, View, Platform, Text, Linking } from "react-native";
 import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -408,6 +408,15 @@ export default function HomeScreen() {
   const handleShouldStartLoadWithRequest = (request: any) => {
     const url = request.url;
     console.log('[HomeScreen] onShouldStartLoadWithRequest:', url);
+    // Hand off non-http(s) schemes to the OS instead of letting the WebView load them
+    // (avoids NSURLErrorDomain -1002 for mailto:, tel:, sms:, facetime:, etc.)
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      console.log('[HomeScreen] Non-http(s) scheme detected, opening externally via Linking:', url);
+      Linking.openURL(url).catch(e =>
+        console.warn('[HomeScreen] Linking.openURL failed for:', url, e)
+      );
+      return false;
+    }
     if (url.includes('/plans')) {
       console.log('[HomeScreen] /plans URL intercepted via onShouldStartLoadWithRequest — pushing subscriptions paywall');
       router.push('/paywall?offeringId=subscriptions');
