@@ -24,6 +24,8 @@ true;
 `;
 
 // JS injected after page loads — tag inputs for autofill + Supabase auth bridge
+// NOTE: debugStorageDump is intentionally removed (was noisy, ran every 2s).
+// Auth state polling via localStorage is kept as the reliable fallback.
 const injectedJavaScript = `
 (function() {
   // --- Input autofill tagging ---
@@ -47,44 +49,6 @@ const injectedJavaScript = `
   // Extracts user.id from the Supabase localStorage token.
   // Token shape: { access_token, refresh_token, user: { id } }
   // or sometimes: { session: { user: { id } } }
-
-  function debugStorageDump() {
-    try {
-      // 1. localStorage
-      var lsKeys = [];
-      for (var i = 0; i < localStorage.length; i++) { lsKeys.push(localStorage.key(i)); }
-
-      // 2. sessionStorage
-      var ssKeys = [];
-      for (var i = 0; i < sessionStorage.length; i++) { ssKeys.push(sessionStorage.key(i)); }
-
-      // 3. cookies
-      var cookies = document.cookie;
-
-      // 4. Check if window.supabase exists
-      var hasSupabase = !!(window.supabase || window.__supabase || window._supabase);
-
-      // 5. Check for any global variable that might be the supabase client
-      var globalKeys = Object.keys(window).filter(function(k) {
-        try { return k.toLowerCase().includes('supa') || k.toLowerCase().includes('auth'); } catch(e) { return false; }
-      });
-
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: 'DEBUG_STORAGE',
-        localStorage: lsKeys,
-        sessionStorage: ssKeys,
-        cookies: cookies.substring(0, 500),
-        hasSupabase: hasSupabase,
-        supabaseGlobals: globalKeys,
-        url: window.location.href
-      }));
-    } catch(e) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG_STORAGE_ERROR', error: String(e) }));
-    }
-  }
-
-  debugStorageDump();
-  setTimeout(debugStorageDump, 2000);
 
   function getSupabaseUserId() {
     try {
@@ -206,24 +170,36 @@ const styles = StyleSheet.create({
   },
 });
 
+// Stable WebView source — defined outside component so the prop reference never changes.
+const webViewSource = { uri: webAppUrl };
+
 export default function HomeScreen() {
   console.log('[HomeScreen] rendering - Platform:', Platform.OS);
   const router = useRouter();
   const splashHiddenRef = useRef(false);
+  const webViewReadyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
-  // Ensures push permission is requested exactly once, the first time /calendar is visited.
+  // Ensures push permission is requested exactly once per sign-in event.
   const pushPermissionAskedRef = useRef(false);
 
   useEffect(() => {
     console.log('[HomeScreen] mounted - WebView URL:', webAppUrl);
 
-    // Forward notification-tap events to the WebView so the web app can deep-link
+    // Forward notification-tap events to the WebView so the web app can deep-link.
+    // We wait until the WebView is ready (onLoadEnd) before injecting.
     const responseListener = addNotificationResponseReceivedListener((response) => {
       const notifData = response.notification.request.content.data;
       console.log('[HomeScreen] Notification response received, forwarding to WebView:', JSON.stringify(notifData));
       const js = `window.onNotificationResponse && window.onNotificationResponse(${JSON.stringify(notifData)}); true;`;
-      webViewRef.current?.injectJavaScript(js);
+      if (webViewReadyRef.current) {
+        webViewRef.current?.injectJavaScript(js);
+      } else {
+        // WebView not ready yet — retry once it loads
+        setTimeout(() => {
+          webViewRef.current?.injectJavaScript(js);
+        }, 1000);
+      }
     });
 
     return () => {
@@ -244,46 +220,55 @@ export default function HomeScreen() {
     }, [])
   );
 
-  const handleMessage = async (event: any) => {
+  // Helper: post a PUSH_TOKEN message back to the WebView (spec-compliant format)
+  const sendPushTokenToWebView = useCallback((token: string | null | undefined) => {
+    const tokenValue = token ?? null;
+    console.log('[HomeScreen] sendPushTokenToWebView — token:', tokenValue);
+    const js = `window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PUSH_TOKEN', token: ${JSON.stringify(tokenValue)} })); true;`;
+    webViewRef.current?.injectJavaScript(js);
+  }, []);
+
+  const handleMessage = useCallback(async (event: any) => {
     const raw = event.nativeEvent.data;
     console.log('[HomeScreen] onMessage received raw:', raw);
     try {
       const data = JSON.parse(raw);
       console.log('[HomeScreen] onMessage parsed type:', data.type, data.url ? '| url: ' + data.url : '');
+
+      // Silently drop debug storage dumps — no longer logged to reduce noise
       if (data.type === 'DEBUG_STORAGE' || data.type === 'DEBUG_STORAGE_ERROR') {
-        console.log('[Auth Debug]', JSON.stringify(data, null, 2));
         return;
       }
 
       if (data.type === 'AUTH_SIGNED_IN' && data.userId) {
         console.log('[HomeScreen] AUTH_SIGNED_IN — userId:', data.userId);
+        // Register for push notifications on sign-in and send token back to WebView
         if (!pushPermissionAskedRef.current) {
           pushPermissionAskedRef.current = true;
-          registerForPushNotificationsAsync().catch(err =>
-            console.error('[HomeScreen] Push registration error:', err)
-          );
+          try {
+            const token = await registerForPushNotificationsAsync();
+            sendPushTokenToWebView(token);
+          } catch (err) {
+            console.error('[HomeScreen] Push registration error on AUTH_SIGNED_IN:', err);
+            sendPushTokenToWebView(null);
+          }
         }
         return;
       }
+
       if (data.type === 'REGISTER_PUSH_NOTIFICATIONS') {
         console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS received — registering and fetching token');
         try {
           const token = await registerForPushNotificationsAsync();
           console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS token:', token);
-          if (token) {
-            const js = `window.onPushTokenReceived && window.onPushTokenReceived('${token}'); true;`;
-            webViewRef.current?.injectJavaScript(js);
-          } else {
-            const js = `window.onPushTokenReceived && window.onPushTokenReceived(null); true;`;
-            webViewRef.current?.injectJavaScript(js);
-          }
+          sendPushTokenToWebView(token);
         } catch (e) {
           console.warn('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS error:', e);
-          const js = `window.onPushTokenReceived && window.onPushTokenReceived(null); true;`;
-          webViewRef.current?.injectJavaScript(js);
+          sendPushTokenToWebView(null);
         }
         return;
       }
+
       if (data.type === 'READ_CLIPBOARD') {
         console.log('[HomeScreen] READ_CLIPBOARD received — reading clipboard');
         try {
@@ -296,21 +281,25 @@ export default function HomeScreen() {
         }
         return;
       }
+
       if (data.type === 'OPEN_PAYWALL') {
         console.log('[HomeScreen] OPEN_PAYWALL received — navigating to paywall');
         router.push('/paywall');
         return;
       }
+
       if (data.type === 'AUTH_SIGNED_OUT' || data.type === 'SIGN_OUT') {
         console.log('[HomeScreen]', data.type, '— user signed out');
+        // Reset push permission flag so next sign-in re-registers
+        pushPermissionAskedRef.current = false;
         return;
       }
     } catch (e) {
       console.log('[HomeScreen] onMessage JSON parse failed, raw was:', raw);
     }
-  };
+  }, [router, sendPushTokenToWebView]);
 
-  const handleShouldStartLoadWithRequest = (request: any) => {
+  const handleShouldStartLoadWithRequest = useCallback((request: any) => {
     const url = request.url;
     console.log('[HomeScreen] onShouldStartLoadWithRequest:', url);
     // Hand off non-http(s) schemes to the OS instead of letting the WebView load them
@@ -323,35 +312,36 @@ export default function HomeScreen() {
       return false;
     }
     return true;
-  };
+  }, []);
 
-  const hideSplash = () => {
+  const hideSplash = useCallback(() => {
     if (!splashHiddenRef.current) {
       splashHiddenRef.current = true;
       console.log('[HomeScreen] Hiding splash screen');
       SplashScreen.hideAsync().catch(e => console.warn('[HomeScreen] SplashScreen.hideAsync error:', e));
     }
-  };
+  }, []);
 
-  const handleLoadStart = () => {
+  const handleLoadStart = useCallback(() => {
     console.log('[HomeScreen] WebView load started');
     setError(null);
-  };
+  }, []);
 
-  const handleLoadEnd = async () => {
+  const handleLoadEnd = useCallback(() => {
     console.log('[HomeScreen] WebView load ended');
+    webViewReadyRef.current = true;
     hideSplash();
     setError(null);
-    // Inject any pending URL immediately — the web app handles polling via ?purchase=1.
+    // Inject any pending URL — deferred to next tick so the page is fully interactive
     if (pendingWebViewUrl) {
       const url = pendingWebViewUrl;
       console.log('[HomeScreen] onLoadEnd — pendingWebViewUrl detected:', url, '— injecting immediately');
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
-  };
+  }, [hideSplash]);
 
-  const handleError = (syntheticEvent: any) => {
+  const handleError = useCallback((syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
     // Ignore unsupported URL scheme errors (we handle these via onShouldStartLoadWithRequest)
     if (nativeEvent.code === -1002) return;
@@ -359,13 +349,13 @@ export default function HomeScreen() {
     const errorMessage = nativeEvent.description || nativeEvent.code || 'Unknown error';
     setError(`Failed to load: ${errorMessage}`);
     hideSplash();
-  };
+  }, [hideSplash]);
 
-  const handleHttpError = (syntheticEvent: any) => {
+  const handleHttpError = useCallback((syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
     console.error('[HomeScreen] WebView HTTP error:', nativeEvent.statusCode, nativeEvent.url);
     hideSplash();
-  };
+  }, [hideSplash]);
 
   const errorTextColor = colors.text;
 
@@ -389,7 +379,7 @@ export default function HomeScreen() {
         <>
           <WebView
             ref={webViewRef as React.RefObject<WebView>}
-            source={{ uri: webAppUrl }}
+            source={webViewSource}
             onLoadStart={handleLoadStart}
             onLoadEnd={handleLoadEnd}
             onError={handleError}
@@ -417,8 +407,6 @@ export default function HomeScreen() {
             dataDetectorTypes={'none'}
             contentMode="mobile"
           />
-
-
         </>
       )}
     </View>
