@@ -2,7 +2,7 @@
 import "react-native-reanimated";
 import React, { useEffect, useState } from "react";
 import { useFonts } from "expo-font";
-import { Stack, Redirect, usePathname, useRouter } from "expo-router";
+import { Stack, Redirect, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -27,36 +27,60 @@ export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
 
-
+// Safety net: if the WebView never fires onLoadEnd (e.g. network error, slow load),
+// hide the splash screen after this many milliseconds so the app never stays stuck.
+const SPLASH_SAFETY_TIMEOUT_MS = 5000;
 
 export default function RootLayout() {
   useNotifications();
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
+  // Check onboarding state once on mount only — re-running on every pathname change
+  // resets onboardingComplete to null momentarily, which blocks rendering and can
+  // cause the splash screen to hang if the layout re-renders before the async resolves.
   useEffect(() => {
-    isOnboardingComplete().then((complete) => {
-      setOnboardingComplete(complete);
-    });
-  }, [pathname]);
+    console.log('[RootLayout] Checking onboarding state');
+    isOnboardingComplete()
+      .then((complete) => {
+        console.log('[RootLayout] Onboarding complete:', complete);
+        setOnboardingComplete(complete);
+      })
+      .catch((err) => {
+        // SecureStore failure — treat as onboarding complete so the app doesn't hang.
+        console.warn('[RootLayout] isOnboardingComplete failed, defaulting to true:', err);
+        setOnboardingComplete(true);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    console.log('RootLayout mounted, fonts loaded:', loaded);
-    // Splash screen is kept visible until the WebView fires onLoadEnd.
-    // Nothing to do here — SplashScreen.hideAsync() is called by the home screen.
+    console.log('[RootLayout] mounted, fonts loaded:', loaded);
+
+    // Safety timeout: hide the splash screen unconditionally after SPLASH_SAFETY_TIMEOUT_MS.
+    // This ensures the app never stays stuck on the splash screen even if the WebView's
+    // onLoadEnd never fires (e.g. network unavailable, slow connection, unexpected error).
+    const timer = setTimeout(() => {
+      console.log('[RootLayout] Safety timeout reached — forcing SplashScreen.hideAsync()');
+      SplashScreen.hideAsync().catch((e) =>
+        console.warn('[RootLayout] SplashScreen.hideAsync (safety timeout) error:', e)
+      );
+    }, SPLASH_SAFETY_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
   }, [loaded]);
 
   if (onboardingComplete === null) {
+    // Still loading onboarding state — render nothing but don't block indefinitely.
+    // The safety timeout above ensures hideAsync() is called even if we stay here.
     return null;
   }
 
   if (!loaded) {
-    console.log('Fonts not loaded yet, showing splash screen');
+    console.log('[RootLayout] Fonts not loaded yet, showing splash screen');
     return <View style={{ flex: 1, backgroundColor: '#0a1f2e' }} />;
   }
 
