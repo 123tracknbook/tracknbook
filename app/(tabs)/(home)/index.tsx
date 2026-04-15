@@ -1,6 +1,6 @@
 
 import { WebView } from "react-native-webview";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { StyleSheet, View, Platform, Text, Linking } from "react-native";
 import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
@@ -208,6 +208,7 @@ const styles = StyleSheet.create({
 
 export default function HomeScreen() {
   console.log('[HomeScreen] rendering - Platform:', Platform.OS);
+  const router = useRouter();
   const splashHiddenRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
@@ -293,6 +294,11 @@ export default function HomeScreen() {
           console.warn('[HomeScreen] READ_CLIPBOARD failed:', e);
           webViewRef.current?.injectJavaScript(`window.postMessage({ type: 'CLIPBOARD_ERROR', message: 'Failed to read clipboard' }, '*'); true;`);
         }
+        return;
+      }
+      if (data.type === 'OPEN_PAYWALL') {
+        console.log('[HomeScreen] OPEN_PAYWALL received — navigating to paywall');
+        router.push('/paywall');
         return;
       }
       if (data.type === 'AUTH_SIGNED_OUT' || data.type === 'SIGN_OUT') {
