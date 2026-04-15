@@ -22,6 +22,12 @@ import { isOnboardingComplete } from "@/utils/onboardingStorage";
 SplashScreen.preventAutoHideAsync();
 // Note: Notifications.setNotificationHandler is already called in utils/notifications.ts
 
+// Module-level hard fallback: fires outside React's lifecycle entirely.
+// Guarantees the splash hides even if the component tree never mounts or crashes.
+setTimeout(() => {
+  SplashScreen.hideAsync().catch(() => {});
+}, 5000);
+
 export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
@@ -58,8 +64,10 @@ export default function RootLayout() {
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Safety timeout: set up once on mount, independent of font loading state.
-  // The WebView's onLoadEnd calls hideAsync() immediately — this is only a fallback.
+  // Safety timeout: hide the splash screen after SPLASH_SAFETY_TIMEOUT_MS no matter what.
+  // This is a hard fallback — the WebView's onLoadEnd (or onboarding mount) should hide it
+  // sooner. We intentionally do NOT clear this timer on unmount so it always fires even if
+  // _layout.tsx remounts or a redirect causes a brief unmount cycle.
   useEffect(() => {
     console.log('[RootLayout] mounted — starting splash safety timeout');
     const timer = setTimeout(() => {
@@ -69,7 +77,9 @@ export default function RootLayout() {
       );
     }, SPLASH_SAFETY_TIMEOUT_MS);
 
-    return () => clearTimeout(timer);
+    // No clearTimeout — we want this to fire even if the component unmounts before 5s.
+    // The extra hideAsync() call after it already hid is a no-op (caught by .catch).
+    return undefined;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // NOTE: We intentionally do NOT block on font loading or onboarding check.

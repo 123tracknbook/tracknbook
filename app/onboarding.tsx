@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import * as SplashScreen from "expo-splash-screen";
 
 import { onboardingQuestions } from "@/constants/OnboardingQuestions";
 import { completeOnboarding } from "@/utils/onboardingStorage";
@@ -25,6 +26,16 @@ export default function OnboardingScreen() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const opacity = useSharedValue(1);
   const isAnimating = useRef(false);
+
+  // Hide the splash screen as soon as the onboarding screen mounts.
+  // The safety timeout in _layout.tsx is a fallback, but if the user is redirected
+  // here before the WebView ever loads, we must hide it ourselves.
+  useEffect(() => {
+    console.log('[OnboardingScreen] mounted — hiding splash screen');
+    SplashScreen.hideAsync().catch((e) =>
+      console.warn('[OnboardingScreen] SplashScreen.hideAsync error:', e)
+    );
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const question = onboardingQuestions[currentStep];
   const selectedOption = answers[currentStep];
