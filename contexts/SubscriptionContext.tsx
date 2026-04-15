@@ -16,6 +16,9 @@ const IOS_RC_KEY = "appl_VvUEhtaTtsgThAClFhpGuUaFcdc";
 const ANDROID_RC_KEY = "ANDROID_RC_KEY_PLACEHOLDER";
 const ENTITLEMENT_ID = "solo";
 
+// Maximum time to wait for getCustomerInfo before giving up and unblocking.
+const RC_INIT_TIMEOUT_MS = 4000;
+
 interface SubscriptionContextType {
   isSubscribed: boolean;
   customerInfo: CustomerInfo | null;
@@ -26,7 +29,7 @@ interface SubscriptionContextType {
 const SubscriptionContext = createContext<SubscriptionContextType>({
   isSubscribed: false,
   customerInfo: null,
-  isLoading: true,
+  isLoading: false,
   restorePurchases: async () => null,
 });
 
@@ -36,49 +39,79 @@ interface SubscriptionProviderProps {
 
 export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const apiKey = Platform.OS === "ios" ? IOS_RC_KEY : ANDROID_RC_KEY;
-    console.log("[SubscriptionContext] Configuring RevenueCat — platform:", Platform.OS);
+    // All RC work is fire-and-forget. Nothing here must block children from rendering.
+    let listenerCleanup: (() => void) | null = null;
 
-    try {
-      if (__DEV__) {
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    const init = async () => {
+      const apiKey = Platform.OS === "ios" ? IOS_RC_KEY : ANDROID_RC_KEY;
+      console.log("[SubscriptionContext] Configuring RevenueCat — platform:", Platform.OS);
+
+      // Step 1: configure — must never throw outside try/catch
+      try {
+        if (__DEV__) {
+          Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+        }
+        Purchases.configure({ apiKey });
+        console.log("[SubscriptionContext] RevenueCat configured successfully");
+      } catch (e) {
+        console.warn("[SubscriptionContext] RevenueCat configure error (non-fatal):", e);
+        // RC is broken — bail out entirely, children are already rendered
+        return;
       }
-      Purchases.configure({ apiKey });
-      console.log("[SubscriptionContext] RevenueCat configured successfully");
-    } catch (e) {
-      console.error("[SubscriptionContext] RevenueCat configure error:", e);
-    }
 
-    // Fetch initial CustomerInfo
-    Purchases.getCustomerInfo()
-      .then((info) => {
+      // Step 2: attach listener — must never throw outside try/catch
+      try {
+        const listener = Purchases.addCustomerInfoUpdateListener((info) => {
+          console.log(
+            "[SubscriptionContext] CustomerInfo updated — entitlements:",
+            Object.keys(info.entitlements.active)
+          );
+          setCustomerInfo(info);
+        });
+        listenerCleanup = () => {
+          try {
+            listener.remove();
+          } catch (_) {
+            // ignore
+          }
+        };
+      } catch (e) {
+        console.warn("[SubscriptionContext] addCustomerInfoUpdateListener error (non-fatal):", e);
+      }
+
+      // Step 3: fetch initial CustomerInfo with a hard timeout so it never hangs
+      setIsLoading(true);
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("RC getCustomerInfo timeout")), RC_INIT_TIMEOUT_MS)
+        );
+        const info = await Promise.race([
+          Purchases.getCustomerInfo(),
+          timeoutPromise,
+        ]);
         console.log(
           "[SubscriptionContext] Initial CustomerInfo fetched — entitlements:",
           Object.keys(info.entitlements.active)
         );
         setCustomerInfo(info);
-      })
-      .catch((e) => {
-        console.error("[SubscriptionContext] getCustomerInfo error:", e);
-      })
-      .finally(() => {
+      } catch (e) {
+        console.warn("[SubscriptionContext] getCustomerInfo error (non-fatal):", e);
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
 
-    // Listen for CustomerInfo updates (e.g. after a purchase)
-    const listener = Purchases.addCustomerInfoUpdateListener((info) => {
-      console.log(
-        "[SubscriptionContext] CustomerInfo updated — entitlements:",
-        Object.keys(info.entitlements.active)
-      );
-      setCustomerInfo(info);
+    // Run async init — errors are fully contained inside init()
+    init().catch((e) => {
+      console.warn("[SubscriptionContext] Unexpected init error (non-fatal):", e);
+      setIsLoading(false);
     });
 
     return () => {
-      listener.remove();
+      if (listenerCleanup) listenerCleanup();
     };
   }, []);
 
