@@ -32,7 +32,7 @@
         "aps-environment": "production"
       },
       "bundleIdentifier": "com.tracknbook.app",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
@@ -68,7 +68,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.tracknbook.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "ACCESS_NETWORK_STATE",
         "RECEIVE_BOOT_COMPLETED",
