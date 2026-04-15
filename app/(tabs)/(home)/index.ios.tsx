@@ -466,7 +466,9 @@ export default function HomeScreen() {
 
   const handleError = (syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
-    console.error('[HomeScreen] WebView error (iOS):', JSON.stringify(nativeEvent, null, 2));
+    // Ignore unsupported URL scheme errors (we handle these via onShouldStartLoadWithRequest)
+    if (nativeEvent.code === -1002) return;
+    console.warn('WebView error (iOS):', nativeEvent);
     const errorMessage = nativeEvent.description || nativeEvent.code || 'Unknown error';
     setError(`Failed to load: ${errorMessage}`);
     hideSplash();
