@@ -1,12 +1,12 @@
 
 import "react-native-reanimated";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useFonts } from "expo-font";
 import { Stack, Redirect, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, View } from "react-native";
+import { useColorScheme } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -17,7 +17,6 @@ import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
-import { useNotifications } from "@/hooks/useNotifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -32,37 +31,37 @@ export const unstable_settings = {
 const SPLASH_SAFETY_TIMEOUT_MS = 5000;
 
 export default function RootLayout() {
-  useNotifications();
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  // Default to true so the app renders immediately without blocking on SecureStore.
+  // The async check below will update this if onboarding is actually incomplete.
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean>(true);
+  const onboardingCheckedRef = useRef(false);
   const pathname = usePathname();
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  // Check onboarding state once on mount only — re-running on every pathname change
-  // resets onboardingComplete to null momentarily, which blocks rendering and can
-  // cause the splash screen to hang if the layout re-renders before the async resolves.
+  // Check onboarding state once on mount — non-blocking: we default to true above
+  // so the app renders immediately and we only redirect to onboarding if needed.
   useEffect(() => {
-    console.log('[RootLayout] Checking onboarding state');
+    if (onboardingCheckedRef.current) return;
+    onboardingCheckedRef.current = true;
+    console.log('[RootLayout] Checking onboarding state (non-blocking)');
     isOnboardingComplete()
       .then((complete) => {
         console.log('[RootLayout] Onboarding complete:', complete);
         setOnboardingComplete(complete);
       })
       .catch((err) => {
-        // SecureStore failure — treat as onboarding complete so the app doesn't hang.
-        console.warn('[RootLayout] isOnboardingComplete failed, defaulting to true:', err);
-        setOnboardingComplete(true);
+        // SecureStore failure — keep default (true) so the app doesn't hang.
+        console.warn('[RootLayout] isOnboardingComplete failed, keeping default true:', err);
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Safety timeout: set up once on mount, independent of font loading state.
+  // The WebView's onLoadEnd calls hideAsync() immediately — this is only a fallback.
   useEffect(() => {
-    console.log('[RootLayout] mounted, fonts loaded:', loaded);
-
-    // Safety timeout: hide the splash screen unconditionally after SPLASH_SAFETY_TIMEOUT_MS.
-    // This ensures the app never stays stuck on the splash screen even if the WebView's
-    // onLoadEnd never fires (e.g. network unavailable, slow connection, unexpected error).
+    console.log('[RootLayout] mounted — starting splash safety timeout');
     const timer = setTimeout(() => {
       console.log('[RootLayout] Safety timeout reached — forcing SplashScreen.hideAsync()');
       SplashScreen.hideAsync().catch((e) =>
@@ -71,20 +70,11 @@ export default function RootLayout() {
     }, SPLASH_SAFETY_TIMEOUT_MS);
 
     return () => clearTimeout(timer);
-  }, [loaded]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (onboardingComplete === null) {
-    // Still loading onboarding state — render nothing but don't block indefinitely.
-    // The safety timeout above ensures hideAsync() is called even if we stay here.
-    return null;
-  }
-
-  if (!loaded) {
-    console.log('[RootLayout] Fonts not loaded yet, showing splash screen');
-    return <View style={{ flex: 1, backgroundColor: '#0a1f2e' }} />;
-  }
-
-  console.log('RootLayout rendering with color scheme:', colorScheme);
+  // NOTE: We intentionally do NOT block on font loading or onboarding check.
+  // The WebView starts loading immediately; fonts and onboarding state resolve in the background.
+  console.log('[RootLayout] rendering — fonts loaded:', loaded, '| onboardingComplete:', onboardingComplete);
 
   const CustomDefaultTheme: Theme = {
     ...DefaultTheme,
