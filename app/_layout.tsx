@@ -15,7 +15,7 @@ import {
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
-import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -28,38 +28,6 @@ export const unstable_settings = {
 };
 
 
-function SubscriptionRedirect() {
-  const { isSubscribed, loading } = useSubscription();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    if (loading) return;
-    const onOnboarding = pathname.startsWith("/onboarding");
-    if (onOnboarding) return;
-
-    let cancelled = false;
-    isOnboardingComplete().then((done) => {
-      if (cancelled) return;
-      if (!done) return;
-      const onPaywall = pathname === "/paywall";
-      if (onPaywall) return;
-      if (!isSubscribed) {
-        router.replace("/paywall");
-      }
-    }).catch(() => {
-      if (cancelled) return;
-      const onPaywall = pathname === "/paywall";
-      if (onPaywall) return;
-      if (!isSubscribed) {
-        router.replace("/paywall");
-      }
-    });
-    return () => { cancelled = true; };
-  }, [isSubscribed, loading, pathname, router]);
-
-  return null;
-}
 
 export default function RootLayout() {
   useNotifications();
@@ -127,7 +95,6 @@ export default function RootLayout() {
       >
         <WidgetProvider>
           <SubscriptionProvider>
-          <SubscriptionRedirect />
             <GestureHandlerRootView style={{ flex: 1 }}>
               {onboardingComplete === false && pathname !== "/auth" && pathname !== "/paywall" && pathname !== "/auth-popup" && pathname !== "/auth-callback" && <Redirect href="/onboarding" />}
 
