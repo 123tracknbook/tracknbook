@@ -1,313 +1,541 @@
-import React, { useCallback, useEffect, useState } from 'react';
+/**
+ * Paywall Screen
+ *
+ * Shows subscription options and handles purchases.
+ * On web, displays features and prompts user to download the app.
+ */
+
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   TouchableOpacity,
-  Platform,
   ActivityIndicator,
   Alert,
+  Platform,
   Linking,
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSubscription } from '@/contexts/SubscriptionContext';
-import Purchases, { PurchasesOffering } from 'react-native-purchases';
-import RevenueCatUI from 'react-native-purchases-ui';
-import type { CustomerInfo } from 'react-native-purchases';
-import type { PurchasesError } from 'react-native-purchases';
-import { setPendingWebViewUrl, webViewRef, currentRcUserId, setCurrentRcUserId } from '@/utils/webViewRef';
+  Dimensions,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { PurchasesPackage } from "react-native-purchases";
 
-const TERMS_URL = 'https://www.tracknbook.com/terms-and-conditions';
-const PRIVACY_URL = 'https://www.tracknbook.com/privacy-policy';
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
-// Error boundary to catch RevenueCatUI.Paywall throws (e.g. native module not linked in Expo Go)
-class PaywallErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode; onError: () => void },
-  { hasError: boolean; errorMessage: string }
-> {
-  constructor(props: { children: React.ReactNode; fallback: React.ReactNode; onError: () => void }) {
-    super(props);
-    this.state = { hasError: false, errorMessage: '' };
-  }
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-  static getDerivedStateFromError(error: Error) {
-    console.log('[Paywall] RevenueCatUI error caught by boundary:', error?.message);
-    return { hasError: true, errorMessage: error?.message ?? 'Unknown error' };
-  }
+// Premium features for the paywall
+const FEATURES = [
+  {
+    icon: "🎵",
+    title: "Unlimited Tracks",
+    description: "Access and manage unlimited music tracks",
+  },
+  {
+    icon: "📅",
+    title: "Advanced Booking",
+    description: "Book sessions and manage your schedule with ease",
+  },
+  {
+    icon: "📊",
+    title: "Analytics & Insights",
+    description: "Track your performance and booking history",
+  },
+  {
+    icon: "☁️",
+    title: "Cloud Sync",
+    description: "Sync your data across all your devices",
+  },
+];
 
-  componentDidCatch(error: Error) {
-    console.error('[Paywall] PaywallErrorBoundary componentDidCatch:', error?.message, error?.stack);
-    this.props.onError();
-  }
-
-  render() {
-    if (this.state.hasError) {
-      console.log('[Paywall] Error boundary rendering fallback UI, error was:', this.state.errorMessage);
-      return this.props.fallback;
-    }
-    return this.props.children;
-  }
-}
+// Customize: Your app's colors
+const colors = {
+  primary: "#007AFF",
+  success: "#34C759",
+  warning: "#FF9500",
+};
 
 export default function PaywallScreen() {
-  console.log('[Paywall] PaywallScreen mounting');
   const router = useRouter();
-  const { offeringId } = useLocalSearchParams<{ offeringId?: string }>();
-  const { refreshCustomerInfo, currentOffering, isLoading } = useSubscription();
-  const [nativePaywallFailed, setNativePaywallFailed] = useState(false);
-  const [resolvedOffering, setResolvedOffering] = useState<PurchasesOffering | null>(null);
-  const [offeringLoading, setOfferingLoading] = useState(!!offeringId);
-  const [isRestoring, setIsRestoring] = useState(false);
 
-  useEffect(() => {
-    console.log('[Paywall] PaywallScreen mounted — offeringId param:', offeringId ?? 'none (using default)');
-    if (!offeringId) {
-      console.log('[Paywall] No offeringId param — falling back to default offering from context');
-      setOfferingLoading(false);
-      return;
+  // Get subscription state and methods from context
+  const {
+    packages,
+    loading,
+    isSubscribed,
+    isWeb,
+    purchasePackage,
+    restorePurchases,
+    mockWebPurchase,
+    mockNativePurchase,
+  } = useSubscription();
+
+  const [selectedPackage, setSelectedPackage] =
+    useState<PurchasesPackage | null>(packages[0] || null);
+  const [purchasing, setPurchasing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [webMockState, setWebMockState] = useState<"idle" | "processing">("idle");
+  const [webMockDialogState, setWebMockDialogState] = useState<"hidden" | "selecting" | "failed">("hidden");
+
+  // Update selected package when packages load
+  React.useEffect(() => {
+    if (packages.length > 0 && !selectedPackage) {
+      setSelectedPackage(packages[0]);
     }
-    if (Platform.OS === 'web') {
-      setOfferingLoading(false);
-      return;
-    }
-    console.log('[Paywall] Fetching offerings to resolve offeringId:', offeringId);
-    Purchases.getOfferings()
-      .then((offerings) => {
-        const match = offerings.all[offeringId] ?? null;
-        console.log('[Paywall] Resolved offering for id "' + offeringId + '":', match ? match.identifier : 'NOT FOUND — falling back to default');
-        if (match) {
-          console.log('[Paywall] Offering packages:', JSON.stringify(match.availablePackages.map(p => ({ id: p.identifier, product: p.product.identifier }))));
-        }
-        setResolvedOffering(match);
-      })
-      .catch((e) => {
-        console.error('[Paywall] Failed to fetch offerings for id "' + offeringId + '":', e);
-      })
-      .finally(() => {
-        setOfferingLoading(false);
-      });
-  }, [offeringId]);
+  }, [packages, selectedPackage]);
 
-  useEffect(() => {
-    if (!offeringId) {
-      console.log('[Paywall] Context offering — isLoading:', isLoading, '| currentOffering:', currentOffering ? currentOffering.identifier : 'NULL');
-      if (currentOffering) {
-        console.log('[Paywall] currentOffering packages:', JSON.stringify(currentOffering.availablePackages.map(p => ({ id: p.identifier, product: p.product.identifier }))));
-      }
-    }
-  }, [isLoading, currentOffering, offeringId]);
+  // Handle purchase
+  const handlePurchase = async () => {
+    if (!selectedPackage) return;
 
-  const handleNativePaywallError = useCallback(() => {
-    console.log('[Paywall] onError callback fired — setting nativePaywallFailed=true');
-    setNativePaywallFailed(true);
-  }, []);
-
-  const handleDismiss = useCallback(() => {
-    console.log('[Paywall] User dismissed paywall');
-    router.back();
-  }, [router]);
-
-  const handlePurchaseCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
-    console.log('[Paywall] Purchase completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
-    // Re-associate the subscriber with the correct Supabase user ID — RevenueCat may have
-    // created an anonymous record during the purchase flow.
-    const userId = currentRcUserId;
-    if (userId) {
-      console.log('[Paywall] Re-calling Purchases.logIn after purchase to re-associate userId:', userId);
-      try {
-        await Purchases.logIn(userId);
-        setCurrentRcUserId(userId);
-        console.log('[Paywall] Purchases.logIn re-association succeeded after purchase');
-      } catch (e) {
-        console.warn('[Paywall] Purchases.logIn re-association failed (non-fatal) after purchase:', e);
-      }
-    } else {
-      console.log('[Paywall] No currentRcUserId — skipping logIn re-association after purchase');
-    }
-    await refreshCustomerInfo();
-    console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
-    setPendingWebViewUrl('/settings?tab=billing&purchase=1');
-    if (webViewRef.current) {
-      console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
-      webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
-    }
-    console.log('[Paywall] Navigating back to previous screen after purchase');
-    router.back();
-  }, [router, refreshCustomerInfo]);
-
-  const handleRestoreCompleted = useCallback(async ({ customerInfo }: { customerInfo: CustomerInfo }) => {
-    console.log('[Paywall] Restore completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
-    // Re-associate the subscriber with the correct Supabase user ID after restore.
-    const userId = currentRcUserId;
-    if (userId) {
-      console.log('[Paywall] Re-calling Purchases.logIn after restore to re-associate userId:', userId);
-      try {
-        await Purchases.logIn(userId);
-        setCurrentRcUserId(userId);
-        console.log('[Paywall] Purchases.logIn re-association succeeded after restore');
-      } catch (e) {
-        console.warn('[Paywall] Purchases.logIn re-association failed (non-fatal) after restore:', e);
-      }
-    } else {
-      console.log('[Paywall] No currentRcUserId — skipping logIn re-association after restore');
-    }
-    await refreshCustomerInfo();
-    console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
-    setPendingWebViewUrl('/settings?tab=billing&purchase=1');
-    if (webViewRef.current) {
-      console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
-      webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
-    }
-    console.log('[Paywall] Navigating back to previous screen after restore');
-    router.back();
-  }, [router, refreshCustomerInfo]);
-
-  const handlePurchaseError = useCallback(({ error }: { error: PurchasesError }) => {
-    console.error('[Paywall] Purchase error:', error?.message ?? error);
-  }, []);
-
-  const handlePurchaseCancelled = useCallback(() => {
-    console.log('[Paywall] Purchase cancelled by user');
-  }, []);
-
-  const handleRestorePurchases = useCallback(async () => {
-    console.log('[Paywall] Restore Purchases tapped');
-    setIsRestoring(true);
     try {
-      const customerInfo = await Purchases.restorePurchases();
-      console.log('[Paywall] restorePurchases completed, active entitlements:', Object.keys(customerInfo.entitlements.active));
-      const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
-      if (hasActive) {
-        // Re-associate the subscriber with the correct Supabase user ID after manual restore.
-        const userId = currentRcUserId;
-        if (userId) {
-          console.log('[Paywall] Re-calling Purchases.logIn after manual restore to re-associate userId:', userId);
-          try {
-            await Purchases.logIn(userId);
-            setCurrentRcUserId(userId);
-            console.log('[Paywall] Purchases.logIn re-association succeeded after manual restore');
-          } catch (e) {
-            console.warn('[Paywall] Purchases.logIn re-association failed (non-fatal) after manual restore:', e);
-          }
-        } else {
-          console.log('[Paywall] No currentRcUserId — skipping logIn re-association after manual restore');
-        }
-        await refreshCustomerInfo();
-        console.log('[Paywall] Setting pendingWebViewUrl to /settings?tab=billing&purchase=1');
-        setPendingWebViewUrl('/settings?tab=billing&purchase=1');
-        if (webViewRef.current) {
-          console.log('[Paywall] Posting PURCHASE_COMPLETE message to WebView');
-          webViewRef.current.postMessage(JSON.stringify({ type: 'PURCHASE_COMPLETE' }));
-        }
-        console.log('[Paywall] Navigating back to previous screen after restore');
-        router.back();
-      } else {
-        console.log('[Paywall] No active entitlements found after restore');
-        Alert.alert('No Purchases Found', 'No purchases found to restore');
+      setPurchasing(true);
+      const success = await purchasePackage(selectedPackage);
+      if (success) {
+        Alert.alert("Welcome!", "Thank you for your purchase.", [
+          { text: "OK", onPress: () => router.replace("/(tabs)/(home)") },
+        ]);
       }
-    } catch (e) {
-      console.error('[Paywall] restorePurchases error:', e);
-      Alert.alert('Restore Failed', 'Restore failed. Please try again');
+    } catch (error: any) {
+      Alert.alert("Purchase Failed", error.message || "Please try again.");
     } finally {
-      setIsRestoring(false);
+      setPurchasing(false);
     }
-  }, [router, refreshCustomerInfo]);
+  };
 
-  const handleOpenTerms = useCallback(() => {
-    console.log('[Paywall] Terms of Service tapped');
-    Linking.openURL(TERMS_URL);
-  }, []);
+  // Handle restore
+  const handleRestore = async () => {
+    try {
+      setRestoring(true);
+      const restored = await restorePurchases();
+      if (restored) {
+        Alert.alert("Restored!", "Your subscription has been restored.", [
+          { text: "OK", onPress: () => router.replace("/(tabs)/(home)") },
+        ]);
+      } else {
+        Alert.alert(
+          "No Purchases Found",
+          "We couldn't find any previous purchases."
+        );
+      }
+    } catch (error: any) {
+      Alert.alert("Restore Failed", error.message || "Please try again.");
+    } finally {
+      setRestoring(false);
+    }
+  };
 
-  const handleOpenPrivacy = useCallback(() => {
-    console.log('[Paywall] Privacy Policy tapped');
-    Linking.openURL(PRIVACY_URL);
-  }, []);
+  const handleClose = () => {
+    router.replace("/(tabs)/(home)");
+  };
 
-  // Web fallback
-  if (Platform.OS === 'web') {
+  // Handle web mock purchase (replicates RevenueCat test store flow for web preview)
+  // Note: Alert.alert with multiple buttons silently fails on React Native Web,
+  // so we use a custom View-based dialog overlay instead.
+  const handleWebMockPurchase = async () => {
+    if (!selectedPackage) return;
+    setWebMockState("processing");
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    setWebMockState("idle");
+    setWebMockDialogState("selecting");
+  };
+
+  // Handle app store links for web
+  const handleDownloadApp = () => {
+    // TODO: Replace with your actual app store URLs
+    const iosUrl = "https://apps.apple.com/app/your-app-id";
+    const androidUrl = "https://play.google.com/store/apps/details?id=your.app.id";
+
+    // On web, we can't detect which device the user has, so show both options
+    Alert.alert(
+      "Download the App",
+      "To subscribe, please download our app from your device's app store.",
+      [
+        { text: "App Store (iOS)", onPress: () => Linking.openURL(iosUrl) },
+        { text: "Google Play", onPress: () => Linking.openURL(androidUrl) },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
+  // Already subscribed - show celebration confirmation
+  if (isSubscribed) {
     return (
-      <SafeAreaView style={styles.fallbackContainer}>
-        <Text style={styles.fallbackTitle}>TracknBook Pro</Text>
-        <Text style={styles.fallbackSubtitle}>Subscriptions are available on iOS and Android.</Text>
-        <TouchableOpacity style={styles.dismissButton} onPress={handleDismiss}>
-          <Text style={styles.dismissButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <View style={styles.subscribedContainer}>
+        <LinearGradient
+          colors={["#667EEA", "#764BA2", "#f093fb"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.subscribedGradient}
+        >
+          {/* Decorative floating orbs */}
+          <View style={[styles.floatingOrb, styles.orb1]} />
+          <View style={[styles.floatingOrb, styles.orb2]} />
+          <View style={[styles.floatingOrb, styles.orb3]} />
+
+          <SafeAreaView edges={["top", "bottom"]} style={styles.subscribedSafeArea}>
+            {/* Close button */}
+            <TouchableOpacity style={styles.subscribedCloseButton} onPress={handleClose}>
+              <Text style={styles.subscribedCloseText}>✕</Text>
+            </TouchableOpacity>
+
+            <View style={styles.subscribedContent}>
+              {/* Celebration icon with glow */}
+              <View style={styles.celebrationIconContainer}>
+                <View style={styles.celebrationGlow} />
+                <Text style={styles.celebrationIcon}>🎉</Text>
+              </View>
+
+              {/* PRO MEMBER badge */}
+              <View style={styles.proMemberBadge}>
+                <Text style={styles.proMemberText}>PRO MEMBER</Text>
+              </View>
+
+              {/* Title */}
+              <Text style={styles.subscribedTitle}>You're All Set!</Text>
+              <Text style={styles.subscribedSubtitle}>
+                Welcome to the premium experience
+              </Text>
+
+              {/* Features card */}
+              <View style={styles.featuresCard}>
+                <Text style={styles.featuresCardTitle}>Unlocked Features</Text>
+                {FEATURES.slice(0, 3).map((feature, index) => (
+                  <View key={index} style={styles.featureCheckRow}>
+                    <View style={styles.checkCircle}>
+                      <Text style={styles.checkMark}>✓</Text>
+                    </View>
+                    <Text style={styles.featureCheckText}>{feature.title}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Start Exploring button */}
+              <TouchableOpacity style={styles.exploreButton} onPress={handleClose}>
+                <View style={styles.exploreButtonInner}>
+                  <Text style={styles.exploreButtonText}>Start Exploring</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+      </View>
     );
   }
 
-  // Loading state while RevenueCat initialises or specific offering is being fetched
-  if (isLoading || offeringLoading) {
-    console.log('[Paywall] Showing loading state — isLoading:', isLoading, '| offeringLoading:', offeringLoading);
+  // Feature icon background colors (rotating by index)
+  const featureIconColors = [
+    "rgba(255, 215, 0, 0.25)",   // Gold
+    "rgba(76, 217, 100, 0.25)",  // Green
+    "rgba(255, 149, 0, 0.25)",   // Orange
+    "rgba(90, 200, 250, 0.25)",  // Blue
+  ];
+
+  // Loading state
+  if (loading) {
     return (
-      <SafeAreaView style={styles.fallbackContainer}>
-        <ActivityIndicator size="large" color="#5B5BFF" />
-        <Text style={styles.fallbackSubtitle}>Loading plans...</Text>
-        <TouchableOpacity style={styles.backButton} onPress={handleDismiss}>
-          <Text style={styles.backButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={["#667EEA", "#764BA2", "#f093fb"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          {/* Decorative floating orbs */}
+          <View style={[styles.floatingOrb, styles.orb1]} />
+          <View style={[styles.floatingOrb, styles.orb2]} />
+          <View style={[styles.floatingOrb, styles.orb3]} />
+
+          <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
+            <View style={styles.centeredContainer}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+      </View>
     );
-  }
-
-  // The offering to display: prefer the resolved specific offering, fall back to context default
-  const activeOffering = resolvedOffering ?? currentOffering;
-
-  // Fallback shown when native module is unavailable (Expo Go) or no offering is configured
-  const fallbackUI = (
-    <SafeAreaView style={styles.fallbackContainer}>
-      <Text style={styles.fallbackTitle}>TracknBook Pro</Text>
-      <Text style={styles.fallbackSubtitle}>
-        {activeOffering
-          ? 'Unlock all features with a Pro subscription.'
-          : 'No subscription plans are configured yet.\nCheck your RevenueCat dashboard.'}
-      </Text>
-      <TouchableOpacity style={styles.dismissButton} onPress={handleDismiss}>
-        <Text style={styles.dismissButtonText}>Go Back</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
-  );
-
-  // If a previous render already failed, skip straight to fallback
-  if (nativePaywallFailed) {
-    console.log('[Paywall] Rendering fallback UI (native paywall previously failed)');
-    return fallbackUI;
   }
 
   return (
     <View style={styles.container}>
-      <PaywallErrorBoundary fallback={fallbackUI} onError={handleNativePaywallError}>
-        <RevenueCatUI.Paywall
-          offering={activeOffering ?? undefined}
-          onDismiss={handleDismiss}
-          onPurchaseCompleted={handlePurchaseCompleted}
-          onRestoreCompleted={handleRestoreCompleted}
-          onPurchaseError={handlePurchaseError}
-          onPurchaseCancelled={handlePurchaseCancelled}
-        />
-      </PaywallErrorBoundary>
-      <SafeAreaView edges={['bottom']} style={styles.footer}>
-        <TouchableOpacity
-          style={styles.restoreButton}
-          onPress={handleRestorePurchases}
-          activeOpacity={0.7}
-          disabled={isRestoring}
-        >
-          <Text style={styles.restoreButtonText}>
-            {isRestoring ? 'Restoring...' : 'Restore Purchases'}
-          </Text>
-        </TouchableOpacity>
-        <View style={styles.legalRow}>
-          <TouchableOpacity onPress={handleOpenTerms} activeOpacity={0.7}>
-            <Text style={styles.legalLink}>Terms of Service</Text>
-          </TouchableOpacity>
-          <Text style={styles.legalSeparator}>|</Text>
-          <TouchableOpacity onPress={handleOpenPrivacy} activeOpacity={0.7}>
-            <Text style={styles.legalLink}>Privacy Policy</Text>
-          </TouchableOpacity>
+      <LinearGradient
+        colors={["#667EEA", "#764BA2", "#f093fb"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientBackground}
+      >
+        {/* Decorative floating orbs */}
+        <View style={[styles.floatingOrb, styles.orb1]} />
+        <View style={[styles.floatingOrb, styles.orb2]} />
+        <View style={[styles.floatingOrb, styles.orb3]} />
+
+        <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Header */}
+            <View style={styles.header}>
+              {/* Premium badge */}
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+              </View>
+              <Text style={styles.title}>Upgrade to Premium</Text>
+              <Text style={styles.subtitle}>
+                Unlock all features and get the most out of the app
+              </Text>
+            </View>
+
+            {/* Features List - Glass Card */}
+            <View style={styles.featuresCard}>
+              <Text style={styles.featuresCardTitle}>What You'll Get</Text>
+              {FEATURES.map((feature, index) => (
+                <View key={index} style={styles.featureRow}>
+                  <View style={[styles.featureIcon, { backgroundColor: featureIconColors[index % featureIconColors.length] }]}>
+                    <Text style={styles.featureIconText}>{feature.icon}</Text>
+                  </View>
+                  <View style={styles.featureText}>
+                    <Text style={styles.featureTitle}>{feature.title}</Text>
+                    <Text style={styles.featureDescription}>
+                      {feature.description}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Package Selection */}
+            {packages.length > 0 && (
+              <View style={styles.packagesContainer}>
+                {packages.map((pkg) => {
+                  const isSelected = selectedPackage?.identifier === pkg.identifier;
+                  return (
+                    <TouchableOpacity
+                      key={pkg.identifier}
+                      style={[
+                        styles.packageCard,
+                        isSelected && styles.packageCardSelected,
+                      ]}
+                      onPress={() => setSelectedPackage(pkg)}
+                    >
+                      {isSelected && <View style={styles.selectedIndicator} />}
+                      <View style={styles.packageHeader}>
+                        <Text style={styles.packageTitle}>{pkg.product.title}</Text>
+                        {isSelected && (
+                          <View style={styles.checkmarkCircle}>
+                            <Text style={styles.checkmark}>✓</Text>
+                          </View>
+                        )}
+                      </View>
+                      {pkg.product.priceString ? (
+                        <Text style={styles.packagePrice}>
+                          {pkg.product.priceString}
+                        </Text>
+                      ) : null}
+                      {pkg.product.description && (
+                        <Text style={styles.packageDescription}>
+                          {pkg.product.description}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* No packages available - only show on native */}
+            {/* This appears in standard Expo Go because react-native-purchases */}
+            {/* native module is not bundled in Expo Go. Use a dev build to test purchases. */}
+            {!isWeb && packages.length === 0 && !loading && (
+              <View style={styles.noPackagesContainer}>
+                <Text style={styles.noPackagesText}>
+                  Purchases are not available in standard Expo Go.
+                </Text>
+                <Text style={[styles.noPackagesText, { marginTop: 8, opacity: 0.7 }]}>
+                  To test purchases, use a development build or production build.
+                  {"\n"}This is expected — your onboarding and storage are working correctly.
+                </Text>
+                {__DEV__ && (
+                  <TouchableOpacity
+                    style={styles.devMockButton}
+                    onPress={async () => {
+                      await mockNativePurchase();
+                      router.replace("/(tabs)/(home)");
+                    }}
+                  >
+                    <Text style={styles.devMockButtonText}>Dev: Simulate Purchase</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Bottom Actions */}
+          <View style={styles.bottomActions}>
+            {/* Web: mock test-store flow that mirrors Expo Go behavior */}
+            {isWeb ? (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    (!selectedPackage || webMockState === "processing") &&
+                      styles.buttonDisabled,
+                  ]}
+                  onPress={handleWebMockPurchase}
+                  disabled={!selectedPackage || webMockState === "processing"}
+                >
+                  {webMockState === "processing" ? (
+                    <ActivityIndicator color="#764BA2" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>
+                      {selectedPackage
+                        ? selectedPackage.product.priceString
+                          ? `Subscribe for ${selectedPackage.product.priceString}`
+                          : "Subscribe"
+                        : "Select a plan"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={handleRestore}
+                  disabled={restoring}
+                >
+                  {restoring ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.secondaryButtonText}>
+                      Restore Purchases
+                    </Text>
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.legalText}>
+                  Preview mode — purchases available in the mobile app
+                </Text>
+              </>
+            ) : (
+              <>
+                {/* Native: Subscribe Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    (!selectedPackage || purchasing) && styles.buttonDisabled,
+                  ]}
+                  onPress={handlePurchase}
+                  disabled={!selectedPackage || purchasing}
+                >
+                  {purchasing ? (
+                    <ActivityIndicator color="#764BA2" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>
+                      {selectedPackage
+                        ? (selectedPackage.product.priceString
+                            ? `Subscribe for ${selectedPackage.product.priceString}`
+                            : "Subscribe")
+                        : "Select a plan"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Restore Button */}
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={handleRestore}
+                  disabled={restoring}
+                >
+                  {restoring ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.secondaryButtonText}>Restore Purchases</Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Legal Text - Required by App Store */}
+                <Text style={styles.legalText}>
+                  Payment will be charged to your{" "}
+                  {Platform.OS === "ios" ? "Apple ID" : "Google Play"} account.
+                  Subscription automatically renews unless canceled at least 24 hours
+                  before the end of the current period.
+                </Text>
+              </>
+            )}
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      {/* Web Mock Purchase Dialog - View-based overlay (Alert.alert with multiple buttons */}
+      {/* silently fails on React Native Web - callbacks never fire) */}
+      {isWeb && webMockDialogState !== "hidden" && (
+        <View style={styles.webDialogOverlay}>
+          <View style={styles.webDialogBox}>
+            {webMockDialogState === "selecting" && (
+              <>
+                <Text style={styles.webDialogTitle}>Test Purchase</Text>
+                <Text style={styles.webDialogBody}>
+                  {`⚠️ This is a test purchase and should only be used during development. In production, use an Apple/Google API key from RevenueCat.
+
+Package ID: ${selectedPackage?.identifier}
+Title: ${selectedPackage?.product.title}
+Price: ${selectedPackage?.product.priceString || "N/A"}`}
+                </Text>
+                <View style={styles.webDialogDivider} />
+                <TouchableOpacity
+                  style={styles.webDialogButton}
+                  onPress={() => setWebMockDialogState("failed")}
+                >
+                  <Text style={[styles.webDialogButtonText, { color: "#FF3B30" }]}>
+                    Test Failed Purchase
+                  </Text>
+                </TouchableOpacity>
+                <View style={styles.webDialogDivider} />
+                <TouchableOpacity
+                  style={styles.webDialogButton}
+                  onPress={() => {
+                    setWebMockDialogState("hidden");
+                    mockWebPurchase();
+                    router.replace("/(tabs)/(home)");
+                  }}
+                >
+                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
+                    Test Valid Purchase
+                  </Text>
+                </TouchableOpacity>
+                <View style={styles.webDialogDivider} />
+                <TouchableOpacity
+                  style={styles.webDialogButton}
+                  onPress={() => setWebMockDialogState("hidden")}
+                >
+                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {webMockDialogState === "failed" && (
+              <>
+                <Text style={styles.webDialogTitle}>Purchase Failed</Text>
+                <Text style={styles.webDialogBody}>
+                  Test purchase failure: no real transaction occurred
+                </Text>
+                <View style={styles.webDialogDivider} />
+                <TouchableOpacity
+                  style={styles.webDialogButton}
+                  onPress={() => setWebMockDialogState("hidden")}
+                >
+                  <Text style={[styles.webDialogButtonText, { color: "#007AFF" }]}>
+                    OK
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
-      </SafeAreaView>
+      )}
     </View>
   );
 }
@@ -315,87 +543,441 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    width: Dimensions.get("window").width,
+    height: Dimensions.get("window").height,
   },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
+  gradientBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  safeArea: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  centeredContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.85)",
+    marginTop: 16,
+  },
+  scrollView: {
+    flex: 1,
+    width: "100%",
+  },
+  scrollContent: {
+    padding: 24,
+    paddingTop: 60,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  premiumBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  premiumBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 1.5,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+    marginTop: 8,
+  },
+  featuresCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    width: "100%",
+  },
+  featuresCardTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.7)",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginBottom: 12,
+  },
+  featureIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  featureIconText: {
+    fontSize: 20,
+  },
+  featureText: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.75)",
+    marginTop: 2,
+  },
+  packagesContainer: {
+    gap: 12,
+    width: "100%",
+  },
+  packageCard: {
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    overflow: "hidden",
+    width: "100%",
+  },
+  packageCardSelected: {
+    borderColor: "#fff",
+    borderWidth: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+  },
+  selectedIndicator: {
+    position: "absolute",
+    top: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 24,
-    paddingBottom: 8,
-    alignItems: 'center',
-    gap: 6,
+    height: 3,
+    backgroundColor: "#fff",
   },
-  restoreButton: {
+  packageHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  packageTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  checkmarkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkmark: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  packagePrice: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    marginTop: 8,
+  },
+  packageDescription: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.75)",
+    marginTop: 4,
+  },
+  noPackagesContainer: {
+    padding: 24,
+    alignItems: "center",
+  },
+  noPackagesText: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+  },
+  devMockButton: {
+    marginTop: 16,
     paddingVertical: 10,
     paddingHorizontal: 20,
-  },
-  restoreButtonText: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  legalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  legalLink: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
-    fontWeight: '400',
-    textDecorationLine: 'underline',
-  },
-  legalSeparator: {
-    color: 'rgba(255,255,255,0.25)',
-    fontSize: 12,
-  },
-  // Fallback / loading UI
-  fallbackContainer: {
-    flex: 1,
-    backgroundColor: '#0A0A0F',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  fallbackTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  fallbackSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.6)',
-    textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 24,
-  },
-  dismissButton: {
-    backgroundColor: '#5B5BFF',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-  },
-  dismissButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  backButton: {
-    marginTop: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: "rgba(255, 255, 255, 0.4)",
+    borderStyle: "dashed",
+    alignItems: "center",
   },
-  backButtonText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 15,
-    fontWeight: '500',
+  devMockButtonText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  bottomActions: {
+    padding: 24,
+    paddingBottom: 32,
+    gap: 12,
+    width: "100%",
+  },
+  primaryButton: {
+    backgroundColor: "#fff",
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  primaryButtonText: {
+    color: "#764BA2",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  secondaryButton: {
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.9)",
+  },
+  legalText: {
+    fontSize: 11,
+    color: "rgba(255, 255, 255, 0.6)",
+    textAlign: "center",
+    lineHeight: 16,
+  },
+
+  // Web mock purchase dialog (View-based, since Alert.alert with multiple buttons fails on web)
+  webDialogOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+  webDialogBox: {
+    backgroundColor: "#f2f2f7",
+    borderRadius: 14,
+    width: "85%",
+    maxWidth: 400,
+    overflow: "hidden",
+  },
+  webDialogTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#000",
+    textAlign: "center",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 4,
+  },
+  webDialogBody: {
+    fontSize: 13,
+    color: "#000",
+    textAlign: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    lineHeight: 18,
+  },
+  webDialogDivider: {
+    height: 1,
+    backgroundColor: "rgba(0,0,0,0.15)",
+  },
+  webDialogButton: {
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  webDialogButtonText: {
+    fontSize: 17,
+  },
+
+  // Subscribed celebration styles
+  subscribedContainer: {
+    flex: 1,
+    width: Dimensions.get("window").width,
+    height: Dimensions.get("window").height,
+  },
+  subscribedGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  subscribedSafeArea: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  floatingOrb: {
+    position: "absolute",
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+  },
+  orb1: {
+    width: 200,
+    height: 200,
+    top: -50,
+    right: -50,
+  },
+  orb2: {
+    width: 150,
+    height: 150,
+    bottom: 100,
+    left: -40,
+  },
+  orb3: {
+    width: 100,
+    height: 100,
+    top: SCREEN_HEIGHT * 0.3,
+    right: 20,
+  },
+  subscribedCloseButton: {
+    position: "absolute",
+    top: 16,
+    right: 20,
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  subscribedCloseText: {
+    fontSize: 18,
+    color: "#fff",
+    fontWeight: "600",
+  },
+  subscribedContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  celebrationIconContainer: {
+    position: "relative",
+    marginBottom: 20,
+  },
+  celebrationGlow: {
+    position: "absolute",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    top: -20,
+    left: -20,
+  },
+  celebrationIcon: {
+    fontSize: 80,
+  },
+  proMemberBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  proMemberText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 1.5,
+  },
+  subscribedTitle: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subscribedSubtitle: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  featuresCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 20,
+    padding: 20,
+    width: "100%",
+    marginBottom: 32,
+  },
+  featuresCardTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.7)",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  featureCheckRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  checkMark: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  featureCheckText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "500",
+  },
+  exploreButton: {
+    width: "100%",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  exploreButtonInner: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingVertical: 18,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    borderRadius: 16,
+  },
+  exploreButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
