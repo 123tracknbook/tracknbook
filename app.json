@@ -121,9 +121,6 @@
         "projectId": "66b1f7d9-c56e-4b54-bd69-1aca90734eae"
       },
       "backendUrl": "https://q2qqmd9vcum448ppvmjs2q8u5cdtb3vr.app.specular.dev",
-      "revenueCatTestApiKeyIos": "test_dnbeWLqYElcHCErNpgsTjKJgmXg",
-      "revenueCatTestApiKeyAndroid": "test_dnbeWLqYElcHCErNpgsTjKJgmXg",
-      "revenueCatEntitlementId": "pro",
       "nativelyProjectId": "d3434265-39a4-4a14-a988-80fa1687686a"
     },
     "runtimeVersion": "1.0.0",
