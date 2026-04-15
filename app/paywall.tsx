@@ -1,80 +1,82 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
+import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import RevenueCatUI from "react-native-purchases-ui";
+import type { CustomerInfo, PurchasesError, PurchasesStoreTransaction } from "react-native-purchases";
 
 export default function PaywallScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
-  console.log("[PaywallScreen] rendering — native paywall stub (react-native-purchases-ui not installed)");
+  console.log("[PaywallScreen] rendering native RevenueCat paywall");
 
   const handleClose = () => {
-    console.log("[PaywallScreen] Close button pressed — going back");
+    console.log("[PaywallScreen] close button pressed — going back");
     router.back();
   };
 
-  const handleRestore = () => {
-    console.log("[PaywallScreen] Restore purchases pressed");
+  const handlePurchaseCompleted = ({
+    customerInfo,
+    storeTransaction,
+  }: {
+    customerInfo: CustomerInfo;
+    storeTransaction: PurchasesStoreTransaction;
+  }) => {
+    console.log(
+      "[PaywallScreen] onPurchaseCompleted — activeEntitlements:",
+      Object.keys(customerInfo.entitlements.active),
+      "| productId:",
+      storeTransaction.productIdentifier
+    );
+    router.back();
+  };
+
+  const handlePurchaseCancelled = () => {
+    console.log("[PaywallScreen] onPurchaseCancelled — going back");
+    router.back();
+  };
+
+  const handlePurchaseError = ({ error }: { error: PurchasesError }) => {
+    console.warn("[PaywallScreen] onPurchaseError:", error.message, "| code:", error.code);
+    router.back();
+  };
+
+  const handleRestoreCompleted = ({ customerInfo }: { customerInfo: CustomerInfo }) => {
+    console.log(
+      "[PaywallScreen] onRestoreCompleted — activeEntitlements:",
+      Object.keys(customerInfo.entitlements.active)
+    );
+    router.back();
+  };
+
+  const handleDismiss = () => {
+    console.log("[PaywallScreen] onDismiss — going back");
     router.back();
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <TouchableOpacity style={styles.closeButton} onPress={handleClose} hitSlop={12}>
         <Text style={styles.closeText}>✕</Text>
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Upgrade to Pro</Text>
-        <Text style={styles.subtitle}>
-          Unlock the full TracknBook experience
-        </Text>
-
-        <View style={styles.featuresContainer}>
-          <FeatureRow icon="✓" text="Unlimited jobs and bookings" />
-          <FeatureRow icon="✓" text="Advanced reporting and analytics" />
-          <FeatureRow icon="✓" text="Priority customer support" />
-          <FeatureRow icon="✓" text="Team collaboration tools" />
-        </View>
-
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => {
-            console.log("[PaywallScreen] Subscribe button pressed");
-            router.back();
-          }}
-        >
-          <Text style={styles.primaryButtonText}>Subscribe Now</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
-          <Text style={styles.restoreText}>Restore Purchases</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
-  );
-}
-
-function FeatureRow({ icon, text }: { icon: string; text: string }) {
-  return (
-    <View style={styles.featureRow}>
-      <Text style={styles.featureIcon}>{icon}</Text>
-      <Text style={styles.featureText}>{text}</Text>
-    </View>
+      <View style={styles.paywallWrapper}>
+        <RevenueCatUI.Paywall
+          onPurchaseCompleted={handlePurchaseCompleted}
+          onPurchaseCancelled={handlePurchaseCancelled}
+          onPurchaseError={handlePurchaseError}
+          onRestoreCompleted={handleRestoreCompleted}
+          onDismiss={handleDismiss}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0a1f2e",
+    backgroundColor: "#000",
   },
   closeButton: {
     position: "absolute",
@@ -93,65 +95,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  content: {
-    paddingHorizontal: 28,
-    paddingTop: 80,
-    paddingBottom: 40,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "rgba(255,255,255,0.65)",
-    textAlign: "center",
-    marginBottom: 40,
-    lineHeight: 22,
-  },
-  featuresContainer: {
-    width: "100%",
-    marginBottom: 40,
-  },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-  },
-  featureIcon: {
-    fontSize: 18,
-    color: "#4ade80",
-    marginRight: 14,
-    width: 24,
-    textAlign: "center",
-  },
-  featureText: {
-    fontSize: 16,
-    color: "#fff",
+  paywallWrapper: {
     flex: 1,
-  },
-  primaryButton: {
-    width: "100%",
-    backgroundColor: "#2563eb",
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  restoreButton: {
-    paddingVertical: 12,
-  },
-  restoreText: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 14,
   },
 });
