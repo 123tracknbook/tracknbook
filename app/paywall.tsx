@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import RevenueCatUI from "react-native-purchases-ui";
+import { Paywall } from "react-native-purchases-ui";
 
 export default function PaywallScreen() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function PaywallScreen() {
 
   return (
     <View style={styles.container}>
-      <RevenueCatUI.Paywall
+      <Paywall
         onPurchaseCompleted={handlePurchaseCompleted}
         onPurchaseCancelled={handlePurchaseCancelled}
         onPurchaseError={handlePurchaseError}
