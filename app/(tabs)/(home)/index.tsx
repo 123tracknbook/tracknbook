@@ -6,12 +6,11 @@ import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import * as SplashScreen from "expo-splash-screen";
-import Purchases from "react-native-purchases";
 import {
   registerForPushNotificationsAsync,
   addNotificationResponseReceivedListener,
 } from "@/utils/notifications";
-import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "@/utils/webViewRef";
+import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
 
 const webAppUrl = "https://www.tracknbook.app";
@@ -301,9 +300,6 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
   const router = useRouter();
-  // Track the last RevenueCat-logged userId so we don't call logIn redundantly
-  // across WebView reloads within the same native session.
-  const rcLoggedUserIdRef = useRef<string | null>(null);
   // Ensures push permission is requested exactly once, the first time /calendar is visited.
   const pushPermissionAskedRef = useRef(false);
 
@@ -357,38 +353,8 @@ export default function HomeScreen() {
         router.push('/paywall?offeringId=subscriptions');
         return;
       }
-      if (data.type === 'REVENUECAT_LOGIN') {
-        console.log('[HomeScreen] REVENUECAT_LOGIN received — userId:', data.userId);
-        if (data.userId) {
-          if (rcLoggedUserIdRef.current === data.userId) {
-            console.log('[HomeScreen] REVENUECAT_LOGIN — skipping Purchases.logIn, already logged in as:', data.userId);
-          } else {
-            try {
-              const result = await Purchases.logIn(data.userId);
-              rcLoggedUserIdRef.current = data.userId;
-              setCurrentRcUserId(data.userId);
-              console.log('[RevenueCat] logIn (REVENUECAT_LOGIN) succeeded, created:', result.created, '| userId:', data.userId);
-            } catch (e) {
-              console.warn('[RevenueCat] logIn (REVENUECAT_LOGIN) failed (non-fatal):', e);
-            }
-          }
-        }
-        return;
-      }
       if (data.type === 'AUTH_SIGNED_IN' && data.userId) {
-        if (rcLoggedUserIdRef.current === data.userId) {
-          console.log('[HomeScreen] AUTH_SIGNED_IN — skipping Purchases.logIn, already logged in as:', data.userId);
-          return;
-        }
-        console.log('[HomeScreen] AUTH_SIGNED_IN — calling Purchases.logIn with userId:', data.userId);
-        try {
-          const result = await Purchases.logIn(data.userId);
-          rcLoggedUserIdRef.current = data.userId;
-          setCurrentRcUserId(data.userId);
-          console.log('[RevenueCat] logIn succeeded, created:', result.created, '| userId:', data.userId);
-        } catch (e) {
-          console.warn('[RevenueCat] logIn failed (non-fatal):', e);
-        }
+        console.log('[HomeScreen] AUTH_SIGNED_IN — userId:', data.userId);
         if (!pushPermissionAskedRef.current) {
           pushPermissionAskedRef.current = true;
           registerForPushNotificationsAsync().catch(err =>
@@ -429,15 +395,7 @@ export default function HomeScreen() {
         return;
       }
       if (data.type === 'AUTH_SIGNED_OUT' || data.type === 'SIGN_OUT') {
-        console.log('[HomeScreen]', data.type, '— calling Purchases.logOut');
-        try {
-          await Purchases.logOut();
-          rcLoggedUserIdRef.current = null;
-          setCurrentRcUserId(null);
-          console.log('[RevenueCat] logOut succeeded');
-        } catch (e) {
-          console.warn('[RevenueCat] logOut failed (non-fatal):', e);
-        }
+        console.log('[HomeScreen]', data.type, '— user signed out');
         return;
       }
     } catch (e) {

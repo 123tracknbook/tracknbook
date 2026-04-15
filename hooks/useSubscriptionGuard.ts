@@ -1,3 +1,3 @@
 export function useSubscriptionGuard() {
-  // Paywall is only opened via postMessage from the WebView
+  // No-op: paywall is opened via postMessage from the WebView
 }
