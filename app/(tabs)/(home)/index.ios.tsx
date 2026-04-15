@@ -8,7 +8,10 @@ import { StyleSheet, View, Text, Linking } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import Purchases from "react-native-purchases";
 import * as Notifications from "expo-notifications";
-import { registerForPushNotificationsAsync } from "@/utils/notifications";
+import {
+  registerForPushNotificationsAsync,
+  addNotificationResponseReceivedListener,
+} from "@/utils/notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl, setCurrentRcUserId } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
 
@@ -299,6 +302,18 @@ export default function HomeScreen() {
 
   useEffect(() => {
     console.log('[HomeScreen] mounted (iOS) - WebView URL:', webAppUrl);
+
+    // Forward notification-tap events to the WebView so the web app can deep-link
+    const responseListener = addNotificationResponseReceivedListener((response) => {
+      const notifData = response.notification.request.content.data;
+      console.log('[HomeScreen] Notification response received (iOS), forwarding to WebView:', JSON.stringify(notifData));
+      const js = `window.onNotificationResponse && window.onNotificationResponse(${JSON.stringify(notifData)}); true;`;
+      webViewRef.current?.injectJavaScript(js);
+    });
+
+    return () => {
+      responseListener.remove();
+    };
   }, []);
 
   // When the home screen comes into focus (e.g. after returning from paywall),
@@ -324,8 +339,14 @@ export default function HomeScreen() {
         console.log('[Auth Debug]', JSON.stringify(data, null, 2));
         return;
       }
-      if (data.type === 'INTERCEPT_URL' || data.type === 'OPEN_PAYWALL') {
-        console.log('[HomeScreen] Paywall trigger (iOS) — calling router.push("/paywall")');
+      if (
+        data.type === 'INTERCEPT_URL' ||
+        data.type === 'OPEN_PAYWALL' ||
+        data.type === 'openPaywall' ||
+        data.type === 'upgrade' ||
+        data.type === 'choosePlan'
+      ) {
+        console.log('[HomeScreen] Paywall trigger (iOS) — type:', data.type, '— calling router.push("/paywall")');
         router.push('/paywall');
         return;
       }
@@ -366,6 +387,25 @@ export default function HomeScreen() {
           registerForPushNotificationsAsync().catch(err =>
             console.error('[HomeScreen] Push registration error:', err)
           );
+        }
+        return;
+      }
+      if (data.type === 'REGISTER_PUSH_NOTIFICATIONS') {
+        console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS received (iOS) — registering and fetching token');
+        try {
+          const token = await registerForPushNotificationsAsync();
+          console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS token (iOS):', token);
+          if (token) {
+            const js = `window.onPushTokenReceived && window.onPushTokenReceived('${token}'); true;`;
+            webViewRef.current?.injectJavaScript(js);
+          } else {
+            const js = `window.onPushTokenReceived && window.onPushTokenReceived(null); true;`;
+            webViewRef.current?.injectJavaScript(js);
+          }
+        } catch (e) {
+          console.warn('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS error (iOS):', e);
+          const js = `window.onPushTokenReceived && window.onPushTokenReceived(null); true;`;
+          webViewRef.current?.injectJavaScript(js);
         }
         return;
       }
