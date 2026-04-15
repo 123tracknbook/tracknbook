@@ -88,7 +88,6 @@
       "bundler": "metro"
     },
     "plugins": [
-      ["react-native-purchases", {}],
       "expo-font",
       "expo-router",
       "expo-apple-authentication",
