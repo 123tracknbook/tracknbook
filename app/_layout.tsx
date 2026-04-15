@@ -17,6 +17,7 @@ import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { isOnboardingComplete } from "@/utils/onboardingStorage";
+import { useNotifications } from "@/hooks/useNotifications";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -61,6 +62,7 @@ function SubscriptionRedirect() {
 }
 
 export default function RootLayout() {
+  useNotifications();
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const pathname = usePathname();
   const router = useRouter();
