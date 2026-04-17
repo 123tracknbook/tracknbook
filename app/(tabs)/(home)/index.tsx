@@ -283,6 +283,27 @@ export default function HomeScreen() {
       }
 
       if (
+        data.type === 'readClipboard' ||
+        data.name === 'readClipboard' ||
+        data.handler === 'readClipboard'
+      ) {
+        console.log('[HomeScreen] readClipboard handler received — reading clipboard via Clipboard.getStringAsync');
+        try {
+          const text = await Clipboard.getStringAsync();
+          console.log('[HomeScreen] readClipboard success, text length:', text.length);
+          webViewRef.current?.injectJavaScript(
+            `window.nativelyOnClipboardRead({text: ${JSON.stringify(text)}});true;`
+          );
+        } catch (e) {
+          console.warn('[HomeScreen] readClipboard failed:', e);
+          webViewRef.current?.injectJavaScript(
+            `window.nativelyOnClipboardRead({text: ""});true;`
+          );
+        }
+        return;
+      }
+
+      if (
         data.type === 'OPEN_PAYWALL' ||
         data.type === 'SHOW_PAYWALL' ||
         data.type === 'OPEN_PLANS' ||
