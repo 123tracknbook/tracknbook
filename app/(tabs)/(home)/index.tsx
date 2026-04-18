@@ -1,7 +1,7 @@
 
 import { WebView } from "react-native-webview";
 import { Stack, useRouter } from "expo-router";
-import { StyleSheet, View, Platform, Text, Linking } from "react-native";
+import { StyleSheet, View, Platform, Text, Linking, Image, Animated } from "react-native";
 import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -9,11 +9,14 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   addNotificationResponseReceivedListener,
 } from "@/utils/notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
+
+const PUSH_TOKEN_STORAGE_KEY = '@push_token';
 
 /**
  * Request notification permissions and fetch the Expo push token.
@@ -87,6 +90,15 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
       projectId: projectId ?? undefined,
     });
     console.log('[registerForPushNotificationsAsync] token obtained:', token);
+
+    // Cache the token in AsyncStorage for fast injection on next app open
+    try {
+      await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
+      console.log('[registerForPushNotificationsAsync] token cached in AsyncStorage');
+    } catch (storageErr) {
+      console.warn('[registerForPushNotificationsAsync] failed to cache token:', storageErr);
+    }
+
     return token;
   } catch (e) {
     console.error('[registerForPushNotificationsAsync] failed to get Expo push token:', e);
@@ -197,9 +209,9 @@ const injectedJavaScript = `
     console.log('[WebView-JS] window.supabase not found, falling back to localStorage polling');
   })();
 
-  // 2. Poll localStorage every 500ms as a reliable fallback
+  // 2. Poll localStorage every 1000ms as a reliable fallback
   // (covers cases where the Supabase client is not exposed on window)
-  setInterval(checkAuthState, 500);
+  setInterval(checkAuthState, 1000);
 
   // Run once immediately in case user is already signed in
   checkAuthState();
@@ -207,31 +219,34 @@ const injectedJavaScript = `
 true;
 `;
 
+// Logo asset — resolved once at module level
+const logoSource = require('../../../assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png');
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  // Skeleton overlay — covers the WebView while it loads
+  skeletonOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0a1f2e',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.85)',
     zIndex: 10,
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#fff',
+  skeletonLogo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
   },
-  errorContainer: {
-    flex: 1,
+  // Error overlay — rendered on top of the WebView (absolute) so WebView stays mounted
+  errorOverlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#0a1f2e',
+    zIndex: 20,
   },
   errorTitle: {
     fontSize: 20,
@@ -254,6 +269,9 @@ const styles = StyleSheet.create({
 // Stable WebView source — defined outside component so the prop reference never changes.
 const webViewSource = { uri: webAppUrl };
 
+// Android-only cache mode prop — served from disk before hitting network
+const androidCacheProps = Platform.OS === 'android' ? { cacheMode: 'LOAD_CACHE_ELSE_NETWORK' as const } : {};
+
 export default function HomeScreen() {
   console.log('[HomeScreen] rendering - Platform:', Platform.OS);
   const router = useRouter();
@@ -263,6 +281,23 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   // Ensures push permission is requested exactly once per sign-in event.
   const pushPermissionAskedRef = useRef(false);
+
+  // Skeleton state — shown instantly, faded out on loadEnd
+  const [skeletonMounted, setSkeletonMounted] = useState(true);
+  const skeletonOpacity = useRef(new Animated.Value(1)).current;
+
+  // Pulse animation for the logo while skeleton is visible
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
 
   useEffect(() => {
     console.log('[HomeScreen] mounted - WebView URL:', webAppUrl);
@@ -434,6 +469,17 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // Fade out and unmount the skeleton overlay
+  const dismissSkeleton = useCallback(() => {
+    Animated.timing(skeletonOpacity, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setSkeletonMounted(false);
+    });
+  }, [skeletonOpacity]);
+
   const handleLoadStart = useCallback(() => {
     console.log('[HomeScreen] WebView load started');
     setError(null);
@@ -444,6 +490,8 @@ export default function HomeScreen() {
     webViewReadyRef.current = true;
     hideSplash();
     setError(null);
+    dismissSkeleton();
+
     // Inject any pending URL — deferred to next tick so the page is fully interactive
     if (pendingWebViewUrl) {
       const url = pendingWebViewUrl;
@@ -451,18 +499,31 @@ export default function HomeScreen() {
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
-    // Proactively fetch and inject the push token on every page load
-    console.log('[HomeScreen] onLoadEnd — proactively fetching push token');
+
+    // 1. Immediately inject cached token (zero-latency)
+    AsyncStorage.getItem(PUSH_TOKEN_STORAGE_KEY)
+      .then((cachedToken) => {
+        if (cachedToken) {
+          console.log('[HomeScreen] onLoadEnd — injecting cached push token:', cachedToken);
+          sendPushTokenToWebView(cachedToken);
+        }
+      })
+      .catch((e) => console.warn('[HomeScreen] onLoadEnd — failed to read cached token:', e));
+
+    // 2. Live fetch in background — update WebView if token changed
+    console.log('[HomeScreen] onLoadEnd — background-fetching live push token');
     registerForPushNotificationsAsync()
-      .then((token) => {
-        console.log('[HomeScreen] onLoadEnd — push token ready, injecting into WebView:', token);
-        sendPushTokenToWebView(token);
+      .then((liveToken) => {
+        console.log('[HomeScreen] onLoadEnd — live push token ready:', liveToken);
+        if (liveToken) {
+          // registerForPushNotificationsAsync already caches the token
+          sendPushTokenToWebView(liveToken);
+        }
       })
       .catch((e) => {
-        console.warn('[HomeScreen] onLoadEnd — push token fetch failed:', e);
-        sendPushTokenToWebView(null);
+        console.warn('[HomeScreen] onLoadEnd — live push token fetch failed:', e);
       });
-  }, [hideSplash, sendPushTokenToWebView]);
+  }, [hideSplash, dismissSkeleton, sendPushTokenToWebView]);
 
   const handleError = useCallback((syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
@@ -472,7 +533,8 @@ export default function HomeScreen() {
     const errorMessage = nativeEvent.description || nativeEvent.code || 'Unknown error';
     setError(`Failed to load: ${errorMessage}`);
     hideSplash();
-  }, [hideSplash]);
+    dismissSkeleton();
+  }, [hideSplash, dismissSkeleton]);
 
   const handleHttpError = useCallback((syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
@@ -483,11 +545,45 @@ export default function HomeScreen() {
   const errorTextColor = colors.text;
 
   return (
-    <View style={[styles.container, { backgroundColor: '#000' }]}>
+    <View style={[styles.container, { backgroundColor: '#0a1f2e' }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {error ? (
-        <View style={styles.errorContainer}>
+      {/* WebView is ALWAYS mounted — never unmounted between tab switches or on error */}
+      <WebView
+        ref={webViewRef as React.RefObject<WebView>}
+        source={webViewSource}
+        onLoadStart={handleLoadStart}
+        onLoadEnd={handleLoadEnd}
+        onError={handleError}
+        onHttpError={handleHttpError}
+        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+        onMessage={handleMessage}
+        injectedJavaScriptBeforeContentLoaded={injectedJavaScriptBeforeContentLoaded}
+        injectedJavaScript={injectedJavaScript}
+        startInLoadingState={false}
+        originWhitelist={['*']}
+        cacheEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        sharedCookiesEnabled={true}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        mediaPlaybackRequiresUserAction={false}
+        allowsInlineMediaPlayback={true}
+        allowsFullscreenVideo={true}
+        allowsBackForwardNavigationGestures={Platform.OS === 'ios'}
+        geolocationEnabled={true}
+        style={styles.container}
+        setSupportMultipleWindows={false}
+        autoManageStatusBarEnabled={false}
+        textZoom={100}
+        dataDetectorTypes={'none'}
+        contentMode="mobile"
+        {...androidCacheProps}
+      />
+
+      {/* Error overlay — absolute so WebView stays mounted underneath */}
+      {error !== null && (
+        <View style={styles.errorOverlay}>
           <Text style={[styles.errorTitle, { color: errorTextColor }]}>
             Connection Error
           </Text>
@@ -498,39 +594,16 @@ export default function HomeScreen() {
             Please check your internet connection and try again.
           </Text>
         </View>
-      ) : (
-        <>
-          <WebView
-            ref={webViewRef as React.RefObject<WebView>}
-            source={webViewSource}
-            onLoadStart={handleLoadStart}
-            onLoadEnd={handleLoadEnd}
-            onError={handleError}
-            onHttpError={handleHttpError}
-            onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-            onMessage={handleMessage}
-            injectedJavaScriptBeforeContentLoaded={injectedJavaScriptBeforeContentLoaded}
-            injectedJavaScript={injectedJavaScript}
-            startInLoadingState={false}
-            originWhitelist={['*']}
-            cacheEnabled={true}
-            thirdPartyCookiesEnabled={true}
-            sharedCookiesEnabled={true}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            mediaPlaybackRequiresUserAction={false}
-            allowsInlineMediaPlayback={true}
-            allowsFullscreenVideo={true}
-            allowsBackForwardNavigationGestures={Platform.OS === 'ios'}
-            geolocationEnabled={true}
-            style={styles.container}
-            setSupportMultipleWindows={false}
-            autoManageStatusBarEnabled={false}
-            textZoom={100}
-            dataDetectorTypes={'none'}
-            contentMode="mobile"
+      )}
+
+      {/* Skeleton overlay — shown instantly, fades out on loadEnd */}
+      {skeletonMounted && (
+        <Animated.View style={[styles.skeletonOverlay, { opacity: skeletonOpacity }]}>
+          <Animated.Image
+            source={logoSource}
+            style={[styles.skeletonLogo, { opacity: pulseAnim }]}
           />
-        </>
+        </Animated.View>
       )}
     </View>
   );
