@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "TracknBook",
+    "displayName": "TracknBook",
     "slug": "tracknbook",
     "owner": "tracknbook",
     "version": "1.0.6",

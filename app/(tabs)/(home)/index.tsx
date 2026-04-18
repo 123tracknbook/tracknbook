@@ -459,7 +459,7 @@ export default function HomeScreen() {
     } catch (e) {
       console.log('[HomeScreen] onMessage JSON parse failed, raw was:', raw);
     }
-  }, [router, sendPushTokenToWebView]);
+  }, [router, sendPushTokenToWebView, hideSplash]);
 
   const handleShouldStartLoadWithRequest = useCallback((request: any) => {
     const url = request.url;
