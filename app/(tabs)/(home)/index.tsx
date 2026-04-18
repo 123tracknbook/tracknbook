@@ -6,12 +6,93 @@ import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import * as SplashScreen from "expo-splash-screen";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import Constants from "expo-constants";
 import {
-  registerForPushNotificationsAsync,
   addNotificationResponseReceivedListener,
 } from "@/utils/notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
+
+/**
+ * Request notification permissions and fetch the Expo push token.
+ * - Skips on web (unsupported) and simulators (no APNs/FCM registration).
+ * - Requests permissions before attempting to fetch the token.
+ * - Uses the EAS projectId from app.json → extra.eas.projectId via expo-constants.
+ */
+async function registerForPushNotificationsAsync(): Promise<string | null> {
+  console.log('[registerForPushNotificationsAsync] starting');
+
+  if (Platform.OS === 'web') {
+    console.log('[registerForPushNotificationsAsync] web platform — skipping');
+    return null;
+  }
+
+  // Android: ensure a notification channel exists before requesting permissions
+  if (Platform.OS === 'android') {
+    try {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+      console.log('[registerForPushNotificationsAsync] Android notification channel set');
+    } catch (e) {
+      console.warn('[registerForPushNotificationsAsync] Android channel creation failed (non-fatal):', e);
+    }
+  }
+
+  // Step 1: request permissions
+  let finalStatus: string;
+  try {
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    console.log('[registerForPushNotificationsAsync] existing permission status:', existing);
+    if (existing === 'granted') {
+      finalStatus = existing;
+    } else {
+      const { status: requested } = await Notifications.requestPermissionsAsync();
+      console.log('[registerForPushNotificationsAsync] permission request result:', requested);
+      finalStatus = requested;
+    }
+  } catch (e) {
+    console.error('[registerForPushNotificationsAsync] permission check/request failed:', e);
+    return null;
+  }
+
+  if (finalStatus !== 'granted') {
+    console.warn('[registerForPushNotificationsAsync] permission not granted — cannot fetch token');
+    return null;
+  }
+
+  // Step 2: fetch token — only possible on a physical device
+  if (!Device.isDevice) {
+    console.warn('[registerForPushNotificationsAsync] simulator detected — push token unavailable');
+    return null;
+  }
+
+  try {
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId;
+
+    if (!projectId) {
+      console.warn('[registerForPushNotificationsAsync] EAS projectId not found in app config');
+    } else {
+      console.log('[registerForPushNotificationsAsync] using projectId:', projectId);
+    }
+
+    const { data: token } = await Notifications.getExpoPushTokenAsync({
+      projectId: projectId ?? undefined,
+    });
+    console.log('[registerForPushNotificationsAsync] token obtained:', token);
+    return token;
+  } catch (e) {
+    console.error('[registerForPushNotificationsAsync] failed to get Expo push token:', e);
+    return null;
+  }
+}
 
 const webAppUrl = "https://www.tracknbook.app";
 
@@ -257,13 +338,13 @@ export default function HomeScreen() {
       }
 
       if (data.type === 'GET_PUSH_TOKEN' || data.type === 'REGISTER_PUSH_NOTIFICATIONS') {
-        console.log('[HomeScreen]', data.type, 'received — registering and fetching token');
+        console.log('[HomeScreen]', data.type, 'received — requesting permissions and fetching token');
         try {
           const token = await registerForPushNotificationsAsync();
-          console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS token:', token);
+          console.log('[HomeScreen]', data.type, 'token:', token);
           sendPushTokenToWebView(token);
         } catch (e) {
-          console.warn('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS error:', e);
+          console.warn('[HomeScreen]', data.type, 'error:', e);
           sendPushTokenToWebView(null);
         }
         return;
@@ -370,7 +451,18 @@ export default function HomeScreen() {
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
-  }, [hideSplash]);
+    // Proactively fetch and inject the push token on every page load
+    console.log('[HomeScreen] onLoadEnd — proactively fetching push token');
+    registerForPushNotificationsAsync()
+      .then((token) => {
+        console.log('[HomeScreen] onLoadEnd — push token ready, injecting into WebView:', token);
+        sendPushTokenToWebView(token);
+      })
+      .catch((e) => {
+        console.warn('[HomeScreen] onLoadEnd — push token fetch failed:', e);
+        sendPushTokenToWebView(null);
+      });
+  }, [hideSplash, sendPushTokenToWebView]);
 
   const handleError = useCallback((syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;

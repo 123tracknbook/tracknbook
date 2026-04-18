@@ -219,11 +219,11 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // Helper: post a PUSH_TOKEN message back to the WebView (spec-compliant format)
+  // Helper: dispatch expoPushToken CustomEvent into the WebView
   const sendPushTokenToWebView = useCallback((token: string | null | undefined) => {
     const tokenValue = token ?? null;
     console.log('[HomeScreen] sendPushTokenToWebView (iOS) — token:', tokenValue);
-    const js = `window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PUSH_TOKEN', token: ${JSON.stringify(tokenValue)} })); true;`;
+    const js = `window.dispatchEvent(new CustomEvent('expoPushToken', { detail: { token: ${JSON.stringify(tokenValue)} } })); true;`;
     webViewRef.current?.injectJavaScript(js);
   }, []);
 
@@ -255,14 +255,14 @@ export default function HomeScreen() {
         return;
       }
 
-      if (data.type === 'REGISTER_PUSH_NOTIFICATIONS') {
-        console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS received (iOS) — registering and fetching token');
+      if (data.type === 'GET_PUSH_TOKEN' || data.type === 'REGISTER_PUSH_NOTIFICATIONS') {
+        console.log('[HomeScreen]', data.type, 'received (iOS) — requesting permissions and fetching token');
         try {
           const token = await registerForPushNotificationsAsync();
-          console.log('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS token (iOS):', token);
+          console.log('[HomeScreen]', data.type, 'token (iOS):', token);
           sendPushTokenToWebView(token);
         } catch (e) {
-          console.warn('[HomeScreen] REGISTER_PUSH_NOTIFICATIONS error (iOS):', e);
+          console.warn('[HomeScreen]', data.type, 'error (iOS):', e);
           sendPushTokenToWebView(null);
         }
         return;
@@ -371,7 +371,18 @@ export default function HomeScreen() {
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
-  }, [hideSplash]);
+    // Proactively fetch and inject the push token on every page load
+    console.log('[HomeScreen] onLoadEnd (iOS) — proactively fetching push token');
+    registerForPushNotificationsAsync()
+      .then((token) => {
+        console.log('[HomeScreen] onLoadEnd (iOS) — push token ready, injecting into WebView:', token);
+        sendPushTokenToWebView(token);
+      })
+      .catch((e) => {
+        console.warn('[HomeScreen] onLoadEnd (iOS) — push token fetch failed:', e);
+        sendPushTokenToWebView(null);
+      });
+  }, [hideSplash, sendPushTokenToWebView]);
 
   const handleError = useCallback((syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
