@@ -16,6 +16,8 @@ import {
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
 
+SplashScreen.preventAutoHideAsync();
+
 const PUSH_TOKEN_STORAGE_KEY = '@push_token';
 
 /**
@@ -302,6 +304,12 @@ export default function HomeScreen() {
   useEffect(() => {
     console.log('[HomeScreen] mounted - WebView URL:', webAppUrl);
 
+    // Safety timeout — hide splash after 8s in case APP_READY never arrives
+    const splashTimeoutId = setTimeout(() => {
+      console.log('[HomeScreen] Safety timeout fired — hiding splash screen');
+      hideSplash();
+    }, 8000);
+
     // Forward notification-tap events to the WebView so the web app can deep-link.
     // We wait until the WebView is ready (onLoadEnd) before injecting.
     const responseListener = addNotificationResponseReceivedListener((response) => {
@@ -319,9 +327,10 @@ export default function HomeScreen() {
     });
 
     return () => {
+      clearTimeout(splashTimeoutId);
       responseListener.remove();
     };
-  }, []);
+  }, [hideSplash]);
 
   // When the home screen comes into focus (e.g. after returning from paywall),
   // inject the pending URL immediately — the web app handles polling via ?purchase=1.
@@ -350,6 +359,12 @@ export default function HomeScreen() {
     try {
       const data = JSON.parse(raw);
       console.log('[HomeScreen] onMessage parsed type:', data.type, data.url ? '| url: ' + data.url : '');
+
+      if (data.type === 'APP_READY') {
+        console.log('[HomeScreen] APP_READY received — hiding splash screen');
+        hideSplash();
+        return;
+      }
 
       // Silently drop debug storage dumps — no longer logged to reduce noise
       if (data.type === 'DEBUG_STORAGE' || data.type === 'DEBUG_STORAGE_ERROR') {
