@@ -1,5 +1,6 @@
 {
   "expo": {
+    "newArchEnabled": true,
     "name": "TracknBook",
     "displayName": "TracknBook",
     "slug": "tracknbook",
@@ -96,7 +97,7 @@
         "react-native-fbsdk-next",
         {
           "appID": "1503230158127407",
-          "clientToken": "",
+          "clientToken": "6ad8dc9cbdee647a7906b9f311f622c9",
           "displayName": "TracknApp",
           "scheme": "fb1503230158127407",
           "advertiserIDCollectionEnabled": false,
