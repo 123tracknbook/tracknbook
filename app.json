@@ -9,7 +9,7 @@
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/tracknbook-splash-1290x2796.png",
+      "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
       "resizeMode": "cover",
       "backgroundColor": "#0a1f2e"
     },
@@ -18,9 +18,10 @@
     ],
     "ios": {
       "splash": {
-        "image": "./assets/images/tracknbook-splash-1290x2796.png",
+        "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
         "resizeMode": "cover",
-        "backgroundColor": "#0a1f2e"
+        "backgroundColor": "#0a1f2e",
+        "tabletImage": "./assets/images/827413ca-ee6e-448c-8a59-452956024f9b.jpeg"
       },
       "supportsTablet": true,
       "associatedDomains": [
@@ -60,7 +61,7 @@
     },
     "android": {
       "splash": {
-        "image": "./assets/images/tracknbook-splash-1290x2796.png",
+        "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
         "resizeMode": "cover",
         "backgroundColor": "#0a1f2e"
       },
