@@ -1,13 +1,12 @@
 
 import "react-native-reanimated";
 import React, { useEffect, useRef, useState } from "react";
-import { Settings } from "react-native-fbsdk-next";
+import { Platform, useColorScheme } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack, Redirect, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -48,10 +47,14 @@ export default function RootLayout() {
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  // Initialize Facebook SDK
+  // Initialize Facebook SDK (native only — react-native-fbsdk-next has no web support)
   useEffect(() => {
-    console.log('[RootLayout] Initializing Facebook SDK');
-    Settings.initializeSDK();
+    if (Platform.OS !== 'web') {
+      console.log('[RootLayout] Initializing Facebook SDK');
+      import('react-native-fbsdk-next').then(({ Settings }) => {
+        Settings.initializeSDK();
+      }).catch(() => {});
+    }
   }, []);
 
   // Check onboarding state once on mount — non-blocking: we default to true above
