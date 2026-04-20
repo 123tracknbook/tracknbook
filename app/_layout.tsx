@@ -1,7 +1,7 @@
 
 import "react-native-reanimated";
 import React, { useEffect, useRef, useState } from "react";
-import { Platform, useColorScheme } from "react-native";
+import { useColorScheme } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack, Redirect, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -46,16 +46,6 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
-
-  // Initialize Facebook SDK (native only — react-native-fbsdk-next has no web support)
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      console.log('[RootLayout] Initializing Facebook SDK');
-      import('react-native-fbsdk-next').then(({ Settings }) => {
-        Settings.initializeSDK();
-      }).catch(() => {});
-    }
-  }, []);
 
   // Check onboarding state once on mount — non-blocking: we default to true above
   // so the app renders immediately and we only redirect to onboarding if needed.

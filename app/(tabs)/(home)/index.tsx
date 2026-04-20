@@ -301,6 +301,25 @@ export default function HomeScreen() {
     return () => pulse.stop();
   }, [pulseAnim]);
 
+  const hideSplash = useCallback(() => {
+    if (!splashHiddenRef.current) {
+      splashHiddenRef.current = true;
+      console.log('[HomeScreen] Hiding splash screen');
+      SplashScreen.hideAsync().catch(e => console.warn('[HomeScreen] SplashScreen.hideAsync error:', e));
+    }
+  }, []);
+
+  // Fade out and unmount the skeleton overlay
+  const dismissSkeleton = useCallback(() => {
+    Animated.timing(skeletonOpacity, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setSkeletonMounted(false);
+    });
+  }, [skeletonOpacity]);
+
   useEffect(() => {
     console.log('[HomeScreen] mounted - WebView URL:', webAppUrl);
 
@@ -475,25 +494,6 @@ export default function HomeScreen() {
     }
     return true;
   }, []);
-
-  const hideSplash = useCallback(() => {
-    if (!splashHiddenRef.current) {
-      splashHiddenRef.current = true;
-      console.log('[HomeScreen] Hiding splash screen');
-      SplashScreen.hideAsync().catch(e => console.warn('[HomeScreen] SplashScreen.hideAsync error:', e));
-    }
-  }, []);
-
-  // Fade out and unmount the skeleton overlay
-  const dismissSkeleton = useCallback(() => {
-    Animated.timing(skeletonOpacity, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setSkeletonMounted(false);
-    });
-  }, [skeletonOpacity]);
 
   const handleLoadStart = useCallback(() => {
     console.log('[HomeScreen] WebView load started');
