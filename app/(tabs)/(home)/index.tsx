@@ -1,7 +1,15 @@
 
+// This file is the Android/fallback implementation.
+// iOS uses index.ios.tsx; web uses index.web.tsx.
+// Expo Router requires this file to exist as a fallback sibling for index.ios.tsx.
+//
+// IMPORTANT: Do NOT import AsyncStorage (or any native module that throws during
+// expo-router's static route scan on iOS) at module top-level. Use lazy requires
+// inside function bodies instead.
+
 import { WebView } from "react-native-webview";
 import { Stack, useRouter } from "expo-router";
-import { StyleSheet, View, Platform, Text, Linking, Image, Animated } from "react-native";
+import { StyleSheet, View, Platform, Text, Linking, Animated } from "react-native";
 import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -9,14 +17,11 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   addNotificationResponseReceivedListener,
 } from "@/utils/notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
-
-SplashScreen.preventAutoHideAsync();
 
 const PUSH_TOKEN_STORAGE_KEY = '@push_token';
 
@@ -93,8 +98,11 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
     });
     console.log('[registerForPushNotificationsAsync] token obtained:', token);
 
-    // Cache the token in AsyncStorage for fast injection on next app open
+    // Cache the token in AsyncStorage for fast injection on next app open.
+    // Lazy require to avoid crashing expo-router's iOS route scanner at module load time.
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
       console.log('[registerForPushNotificationsAsync] token cached in AsyncStorage');
     } catch (storageErr) {
@@ -119,8 +127,6 @@ true;
 `;
 
 // JS injected after page loads — tag inputs for autofill + Supabase auth bridge
-// NOTE: debugStorageDump is intentionally removed (was noisy, ran every 2s).
-// Auth state polling via localStorage is kept as the reliable fallback.
 const injectedJavaScript = `
 (function() {
   // --- Input autofill tagging ---
@@ -141,10 +147,6 @@ const injectedJavaScript = `
   _inputObserver.observe(document.body, { childList: true, subtree: true });
 
   // --- Supabase auth bridge ---
-  // Extracts user.id from the Supabase localStorage token.
-  // Token shape: { access_token, refresh_token, user: { id } }
-  // or sometimes: { session: { user: { id } } }
-
   function getSupabaseUserId() {
     try {
       for (var i = 0; i < localStorage.length; i++) {
@@ -153,11 +155,9 @@ const injectedJavaScript = `
           var raw = localStorage.getItem(key);
           if (!raw) continue;
           var parsed = JSON.parse(raw);
-          // Shape 1: { user: { id } }
           if (parsed && parsed.user && parsed.user.id) {
             return parsed.user.id;
           }
-          // Shape 2: { session: { user: { id } } }
           if (parsed && parsed.session && parsed.session.user && parsed.session.user.id) {
             return parsed.session.user.id;
           }
@@ -186,14 +186,12 @@ const injectedJavaScript = `
     }
   }
 
-  // 1. Hook window.supabase.auth.onAuthStateChange if the app exposes the client
   (function trySupabaseHook() {
     try {
       var sb = window.supabase || window.__supabase || null;
       if (sb && sb.auth && typeof sb.auth.onAuthStateChange === 'function') {
         console.log('[WebView-JS] Hooking window.supabase.auth.onAuthStateChange');
         sb.auth.onAuthStateChange(function(event, session) {
-          console.log('[WebView-JS] onAuthStateChange event:', event, '| userId:', session && session.user ? session.user.id : 'none');
           try {
             if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session && session.user && session.user.id) {
               _lastAuthUserId = session.user.id;
@@ -207,15 +205,10 @@ const injectedJavaScript = `
         return;
       }
     } catch(e) {}
-    // Supabase client not yet available — will rely on localStorage polling below
     console.log('[WebView-JS] window.supabase not found, falling back to localStorage polling');
   })();
 
-  // 2. Poll localStorage every 1000ms as a reliable fallback
-  // (covers cases where the Supabase client is not exposed on window)
   setInterval(checkAuthState, 1000);
-
-  // Run once immediately in case user is already signed in
   checkAuthState();
 })();
 true;
@@ -228,7 +221,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // Skeleton overlay — covers the WebView while it loads
   skeletonOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#0a1f2e',
@@ -241,7 +233,6 @@ const styles = StyleSheet.create({
     height: 120,
     resizeMode: 'contain',
   },
-  // Error overlay — rendered on top of the WebView (absolute) so WebView stays mounted
   errorOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -281,7 +272,6 @@ export default function HomeScreen() {
   const webViewReadyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
-  // Ensures push permission is requested exactly once per sign-in event.
   const pushPermissionAskedRef = useRef(false);
 
   // Skeleton state — shown instantly, faded out on loadEnd
@@ -329,8 +319,6 @@ export default function HomeScreen() {
       hideSplash();
     }, 8000);
 
-    // Forward notification-tap events to the WebView so the web app can deep-link.
-    // We wait until the WebView is ready (onLoadEnd) before injecting.
     const responseListener = addNotificationResponseReceivedListener((response) => {
       const notifData = response.notification.request.content.data;
       console.log('[HomeScreen] Notification response received, forwarding to WebView:', JSON.stringify(notifData));
@@ -338,7 +326,6 @@ export default function HomeScreen() {
       if (webViewReadyRef.current) {
         webViewRef.current?.injectJavaScript(js);
       } else {
-        // WebView not ready yet — retry once it loads
         setTimeout(() => {
           webViewRef.current?.injectJavaScript(js);
         }, 1000);
@@ -351,8 +338,6 @@ export default function HomeScreen() {
     };
   }, [hideSplash]);
 
-  // When the home screen comes into focus (e.g. after returning from paywall),
-  // inject the pending URL immediately — the web app handles polling via ?purchase=1.
   useFocusEffect(
     useCallback(() => {
       if (pendingWebViewUrl) {
@@ -364,7 +349,6 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // Helper: dispatch expoPushToken CustomEvent to the WebView
   const sendPushTokenToWebView = useCallback((token: string | null | undefined) => {
     const tokenValue = token ?? null;
     console.log('[HomeScreen] sendPushTokenToWebView — token:', tokenValue);
@@ -385,14 +369,12 @@ export default function HomeScreen() {
         return;
       }
 
-      // Silently drop debug storage dumps — no longer logged to reduce noise
       if (data.type === 'DEBUG_STORAGE' || data.type === 'DEBUG_STORAGE_ERROR') {
         return;
       }
 
       if (data.type === 'AUTH_SIGNED_IN' && data.userId) {
         console.log('[HomeScreen] AUTH_SIGNED_IN — userId:', data.userId);
-        // Register for push notifications on sign-in and send token back to WebView
         if (!pushPermissionAskedRef.current) {
           pushPermissionAskedRef.current = true;
           try {
@@ -468,12 +450,10 @@ export default function HomeScreen() {
 
       if (data.type === 'AUTH_SIGNED_OUT' || data.type === 'SIGN_OUT') {
         console.log('[HomeScreen]', data.type, '— user signed out');
-        // Reset push permission flag so next sign-in re-registers
         pushPermissionAskedRef.current = false;
         return;
       }
 
-      // Debug: log any unhandled message type so we can see what the web app is sending
       console.log('[HomeScreen] UNHANDLED message type:', data.type, '| full data:', JSON.stringify(data));
     } catch (e) {
       console.log('[HomeScreen] onMessage JSON parse failed, raw was:', raw);
@@ -483,8 +463,6 @@ export default function HomeScreen() {
   const handleShouldStartLoadWithRequest = useCallback((request: any) => {
     const url = request.url;
     console.log('[HomeScreen] onShouldStartLoadWithRequest:', url);
-    // Hand off non-http(s) schemes to the OS instead of letting the WebView load them
-    // (avoids NSURLErrorDomain -1002 for mailto:, tel:, sms:, facetime:, etc.)
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       console.log('[HomeScreen] Non-http(s) scheme detected, opening externally via Linking:', url);
       Linking.openURL(url).catch(e =>
@@ -507,7 +485,6 @@ export default function HomeScreen() {
     setError(null);
     dismissSkeleton();
 
-    // Inject any pending URL — deferred to next tick so the page is fully interactive
     if (pendingWebViewUrl) {
       const url = pendingWebViewUrl;
       console.log('[HomeScreen] onLoadEnd — pendingWebViewUrl detected:', url, '— injecting immediately');
@@ -515,23 +492,24 @@ export default function HomeScreen() {
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
 
-    // 1. Immediately inject cached token (zero-latency)
+    // Lazy require AsyncStorage here — safe because this only runs after the component mounts,
+    // never during expo-router's static route scan.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     AsyncStorage.getItem(PUSH_TOKEN_STORAGE_KEY)
-      .then((cachedToken) => {
+      .then((cachedToken: string | null) => {
         if (cachedToken) {
           console.log('[HomeScreen] onLoadEnd — injecting cached push token:', cachedToken);
           sendPushTokenToWebView(cachedToken);
         }
       })
-      .catch((e) => console.warn('[HomeScreen] onLoadEnd — failed to read cached token:', e));
+      .catch((e: unknown) => console.warn('[HomeScreen] onLoadEnd — failed to read cached token:', e));
 
-    // 2. Live fetch in background — update WebView if token changed
     console.log('[HomeScreen] onLoadEnd — background-fetching live push token');
     registerForPushNotificationsAsync()
       .then((liveToken) => {
         console.log('[HomeScreen] onLoadEnd — live push token ready:', liveToken);
         if (liveToken) {
-          // registerForPushNotificationsAsync already caches the token
           sendPushTokenToWebView(liveToken);
         }
       })
@@ -542,7 +520,6 @@ export default function HomeScreen() {
 
   const handleError = useCallback((syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
-    // Ignore unsupported URL scheme errors (we handle these via onShouldStartLoadWithRequest)
     if (nativeEvent.code === -1002) return;
     console.warn('WebView error:', nativeEvent);
     const errorMessage = nativeEvent.description || nativeEvent.code || 'Unknown error';
