@@ -92,6 +92,19 @@
     "plugins": [
       "expo-font",
       "expo-router",
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1503230158127407",
+          "clientToken": "",
+          "displayName": "TracknApp",
+          "scheme": "fb1503230158127407",
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": false,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+        }
+      ],
       "expo-apple-authentication",
       [
         "expo-notifications",
