@@ -5,14 +5,17 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // Set the notification handler to control how notifications are displayed when the app is in the foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Guard for web — Notifications.setNotificationHandler is not supported on web
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+}
 
 /**
  * Register for push notifications and get the Expo push token

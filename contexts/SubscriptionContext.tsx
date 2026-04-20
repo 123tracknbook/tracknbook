@@ -47,6 +47,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     // Fire-and-forget — never block rendering
     (async () => {
       try {
+        if (Platform.OS === 'android' && RC_ANDROID_KEY === 'ANDROID_RC_KEY_PLACEHOLDER') {
+          console.warn('[SubscriptionContext] Android RevenueCat key not set — skipping RC configuration');
+          setIsLoading(false);
+          return;
+        }
         Purchases.setLogLevel(LOG_LEVEL.WARN);
         const apiKey = Platform.OS === "ios" ? RC_IOS_KEY : RC_ANDROID_KEY;
         Purchases.configure({ apiKey });

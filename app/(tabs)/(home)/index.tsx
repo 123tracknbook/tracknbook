@@ -14,107 +14,13 @@ import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import * as SplashScreen from "expo-splash-screen";
-import * as Notifications from "expo-notifications";
-import * as Device from "expo-device";
-import Constants from "expo-constants";
 import {
+  registerForPushNotificationsAsync,
   addNotificationResponseReceivedListener,
 } from "@/utils/notifications";
 import { webViewRef, pendingWebViewUrl, setPendingWebViewUrl } from "@/utils/webViewRef";
 import * as Clipboard from 'expo-clipboard';
 
-const PUSH_TOKEN_STORAGE_KEY = '@push_token';
-
-/**
- * Request notification permissions and fetch the Expo push token.
- * - Skips on web (unsupported) and simulators (no APNs/FCM registration).
- * - Requests permissions before attempting to fetch the token.
- * - Uses the EAS projectId from app.json → extra.eas.projectId via expo-constants.
- */
-async function registerForPushNotificationsAsync(): Promise<string | null> {
-  console.log('[registerForPushNotificationsAsync] starting');
-
-  if (Platform.OS === 'web') {
-    console.log('[registerForPushNotificationsAsync] web platform — skipping');
-    return null;
-  }
-
-  // Android: ensure a notification channel exists before requesting permissions
-  if (Platform.OS === 'android') {
-    try {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-      console.log('[registerForPushNotificationsAsync] Android notification channel set');
-    } catch (e) {
-      console.warn('[registerForPushNotificationsAsync] Android channel creation failed (non-fatal):', e);
-    }
-  }
-
-  // Step 1: request permissions
-  let finalStatus: string;
-  try {
-    const { status: existing } = await Notifications.getPermissionsAsync();
-    console.log('[registerForPushNotificationsAsync] existing permission status:', existing);
-    if (existing === 'granted') {
-      finalStatus = existing;
-    } else {
-      const { status: requested } = await Notifications.requestPermissionsAsync();
-      console.log('[registerForPushNotificationsAsync] permission request result:', requested);
-      finalStatus = requested;
-    }
-  } catch (e) {
-    console.error('[registerForPushNotificationsAsync] permission check/request failed:', e);
-    return null;
-  }
-
-  if (finalStatus !== 'granted') {
-    console.warn('[registerForPushNotificationsAsync] permission not granted — cannot fetch token');
-    return null;
-  }
-
-  // Step 2: fetch token — only possible on a physical device
-  if (!Device.isDevice) {
-    console.warn('[registerForPushNotificationsAsync] simulator detected — push token unavailable');
-    return null;
-  }
-
-  try {
-    const projectId =
-      Constants?.expoConfig?.extra?.eas?.projectId ??
-      Constants?.easConfig?.projectId;
-
-    if (!projectId) {
-      console.warn('[registerForPushNotificationsAsync] EAS projectId not found in app config');
-    } else {
-      console.log('[registerForPushNotificationsAsync] using projectId:', projectId);
-    }
-
-    const { data: token } = await Notifications.getExpoPushTokenAsync({
-      projectId: projectId ?? undefined,
-    });
-    console.log('[registerForPushNotificationsAsync] token obtained:', token);
-
-    // Cache the token in AsyncStorage for fast injection on next app open.
-    // Lazy require to avoid crashing expo-router's iOS route scanner at module load time.
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
-      console.log('[registerForPushNotificationsAsync] token cached in AsyncStorage');
-    } catch (storageErr) {
-      console.warn('[registerForPushNotificationsAsync] failed to cache token:', storageErr);
-    }
-
-    return token;
-  } catch (e) {
-    console.error('[registerForPushNotificationsAsync] failed to get Expo push token:', e);
-    return null;
-  }
-}
 
 const webAppUrl = "https://www.tracknbook.app";
 
@@ -491,19 +397,6 @@ export default function HomeScreen() {
       setPendingWebViewUrl(null);
       webViewRef.current?.injectJavaScript(`window.location.href = '${url}'; true;`);
     }
-
-    // Lazy require AsyncStorage here — safe because this only runs after the component mounts,
-    // never during expo-router's static route scan.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-    AsyncStorage.getItem(PUSH_TOKEN_STORAGE_KEY)
-      .then((cachedToken: string | null) => {
-        if (cachedToken) {
-          console.log('[HomeScreen] onLoadEnd — injecting cached push token:', cachedToken);
-          sendPushTokenToWebView(cachedToken);
-        }
-      })
-      .catch((e: unknown) => console.warn('[HomeScreen] onLoadEnd — failed to read cached token:', e));
 
     console.log('[HomeScreen] onLoadEnd — background-fetching live push token');
     registerForPushNotificationsAsync()
