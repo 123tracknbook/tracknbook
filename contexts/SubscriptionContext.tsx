@@ -11,7 +11,7 @@ import Purchases, { LOG_LEVEL, CustomerInfo } from "react-native-purchases";
 
 const ENTITLEMENT_ID = "solo";
 const RC_IOS_KEY = "appl_VvUEhtaTtsgThAClFhpGuUaFcdc";
-const RC_ANDROID_KEY = "ANDROID_RC_KEY_PLACEHOLDER";
+const RC_ANDROID_KEY = "goog_UprMjRdcrSQmbHJgKYCvfvmYKwd";
 
 interface SubscriptionContextType {
   isSubscribed: boolean;
