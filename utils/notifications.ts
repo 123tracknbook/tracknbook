@@ -132,8 +132,13 @@ export async function scheduleLocalNotification(
       ? {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: triggerSeconds,
+          repeats: false,
         }
-      : null, // null means deliver immediately
+      : {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 1,
+          repeats: false,
+        },
   });
 
   console.log('Local notification scheduled with identifier:', identifier);

@@ -15,33 +15,36 @@ import { IconSymbol } from "./IconSymbol";
 
 configureReanimatedLogger({ strict: false });
 
+function RightAction({
+  prog,
+  drag,
+}: {
+  prog: SharedValue<number>;
+  drag: SharedValue<number>;
+}) {
+  const styleAnimation = useAnimatedStyle(() => ({
+    transform: [{ translateX: drag.value + 200 }],
+  }));
+
+  return (
+    <Pressable
+      onPress={() => {
+        if (process.env.EXPO_OS === "ios") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
+        console.log("delete");
+      }}
+    >
+      <Reanimated.View style={[styleAnimation, styles.rightAction]}>
+        <IconSymbol ios_icon_name="trash.fill" android_material_icon_name="delete" size={24} color="white" />
+      </Reanimated.View>
+    </Pressable>
+  );
+}
+
 export default function ListItem({ listId }: { listId: string }) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-
-  const RightAction = (
-    prog: SharedValue<number>,
-    drag: SharedValue<number>
-  ) => {
-    const styleAnimation = useAnimatedStyle(() => ({
-      transform: [{ translateX: drag.value + 200 }],
-    }));
-
-    return (
-      <Pressable
-        onPress={() => {
-          if (process.env.EXPO_OS === "ios") {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          }
-          console.log("delete");
-        }}
-      >
-        <Reanimated.View style={[styleAnimation, styles.rightAction]}>
-          <IconSymbol name="trash.fill" size={24} color="white" />
-        </Reanimated.View>
-      </Pressable>
-    );
-  };
 
   return (
     <Animated.View entering={FadeIn}>
@@ -50,7 +53,7 @@ export default function ListItem({ listId }: { listId: string }) {
         friction={2}
         enableTrackpadTwoFingerGesture
         rightThreshold={40}
-        renderRightActions={RightAction}
+        renderRightActions={(prog, drag) => <RightAction prog={prog} drag={drag} />}
         overshootRight={false}
         enableContextMenu
       >
@@ -89,7 +92,7 @@ export const NicknameCircle = ({
         },
       ]}
     >
-      {isEllipsis ? "..." : nickname[0].toUpperCase()}
+      {isEllipsis ? "..." : (nickname?.[0] ?? '').toUpperCase()}
     </Text>
   );
 };

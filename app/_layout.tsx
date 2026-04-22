@@ -120,7 +120,7 @@ export default function RootLayout() {
         <WidgetProvider>
           <SubscriptionProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
-              {onboardingComplete === false && pathname !== "/auth" && pathname !== "/paywall" && pathname !== "/auth-popup" && pathname !== "/auth-callback" && <Redirect href="/onboarding" />}
+              {onboardingComplete === false && pathname !== "/onboarding" && pathname !== "/auth" && pathname !== "/paywall" && pathname !== "/auth-popup" && pathname !== "/auth-callback" && <Redirect href="/onboarding" />}
 
               <Stack
                 screenOptions={{

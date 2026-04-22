@@ -9,7 +9,7 @@ import React, {
 import { Platform } from "react-native";
 import Purchases, { LOG_LEVEL, CustomerInfo } from "react-native-purchases";
 
-const ENTITLEMENT_ID = "solo";
+const ENTITLEMENT_ID = "pro";
 const RC_IOS_KEY = "appl_VvUEhtaTtsgThAClFhpGuUaFcdc";
 const RC_ANDROID_KEY = "goog_UprMjRdcrSQmbHJgKYCvfvmYKwd";
 
@@ -71,17 +71,23 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     })();
 
     // Listen for real-time CustomerInfo updates (e.g. after purchase)
-    const listener = Purchases.addCustomerInfoUpdateListener((info) => {
-      console.log(
-        "[SubscriptionContext] customerInfoUpdateListener fired — entitlement active:",
-        checkEntitlement(info)
-      );
-      setCustomerInfo(info);
-    });
+    // Must be set up after configure() — stored here for cleanup
+    let listener: { remove: () => void } | null = null;
+    try {
+      listener = Purchases.addCustomerInfoUpdateListener((info) => {
+        console.log(
+          "[SubscriptionContext] customerInfoUpdateListener fired — entitlement active:",
+          checkEntitlement(info)
+        );
+        setCustomerInfo(info);
+      });
+    } catch (e) {
+      console.warn("[SubscriptionContext] error adding customerInfoUpdateListener:", e);
+    }
 
     return () => {
       try {
-        listener.remove();
+        listener?.remove();
       } catch (e) {
         console.warn("[SubscriptionContext] error removing listener:", e);
       }

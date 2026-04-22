@@ -42,7 +42,7 @@ export function useCamera() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
-      if (status !== 'granted') {
+      if (status !== 'granted' && status !== 'limited') {
         console.log('Media library permission denied');
         Alert.alert(
           'Photo Library Permission Required',

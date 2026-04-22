@@ -2,7 +2,6 @@
   "expo": {
     "newArchEnabled": true,
     "name": "TracknBook",
-    "displayName": "TracknBook",
     "slug": "tracknbook",
     "owner": "tracknbook",
     "version": "1.0.3",
@@ -32,7 +31,6 @@
         "com.apple.developer.associated-domains": [
           "webcredentials:tracknbook.app"
         ],
-        "aps-environment": "production"
       },
       "bundleIdentifier": "com.tracknbook.app",
       "buildNumber": "1.0.6",
@@ -57,7 +55,8 @@
         },
         "UIBackgroundModes": [
           "remote-notification"
-        ]
+        ],
+        "NSLocationWhenInUseUsageDescription": "TracknBook uses your location to show nearby services and job sites."
       }
     },
     "android": {
@@ -82,10 +81,11 @@
         "WRITE_EXTERNAL_STORAGE",
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
         "INTERNET",
         "com.google.android.gms.permission.AD_ID"
       ],
-      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "favicon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
@@ -119,6 +119,8 @@
         }
       ],
       [
+        "react-native-purchases",
+      [
         "expo-image-picker",
         {
           "cameraPermission": "TracknBook uses your camera so team members can take photos for jobs, such as before-and-after work photos, site issues, or completed work, and attach them to the job record.",
@@ -145,8 +147,5 @@
     "updates": {
       "url": "https://u.expo.dev/66b1f7d9-c56e-4b54-bd69-1aca90734eae"
     },
-    "notification": {
-      "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png"
-    }
   }
 }
