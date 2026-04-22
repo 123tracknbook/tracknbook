@@ -11,7 +11,7 @@
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#0a1f2e"
     },
     "assetBundlePatterns": [
@@ -20,7 +20,7 @@
     "ios": {
       "splash": {
         "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
-        "resizeMode": "contain",
+        "resizeMode": "cover",
         "backgroundColor": "#0a1f2e",
         "tabletImage": "./assets/images/827413ca-ee6e-448c-8a59-452956024f9b.jpeg"
       },
@@ -63,7 +63,7 @@
     "android": {
       "splash": {
         "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
-        "resizeMode": "contain",
+        "resizeMode": "cover",
         "backgroundColor": "#0a1f2e"
       },
       "adaptiveIcon": {
