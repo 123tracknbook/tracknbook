@@ -5,7 +5,7 @@
     "displayName": "TracknBook",
     "slug": "tracknbook",
     "owner": "tracknbook",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
@@ -71,7 +71,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.tracknbook.app",
-      "versionCode": 2,
+      "versionCode": 4,
       "permissions": [
         "ACCESS_NETWORK_STATE",
         "RECEIVE_BOOT_COMPLETED",
@@ -82,7 +82,8 @@
         "WRITE_EXTERNAL_STORAGE",
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS",
-        "INTERNET"
+        "INTERNET",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "softwareKeyboardLayoutMode": "pan"
     },
@@ -136,7 +137,7 @@
       "eas": {
         "projectId": "66b1f7d9-c56e-4b54-bd69-1aca90734eae"
       },
-      "backendUrl": "https://x22c75gpnejzjbk2e7cztbaussb8z4ac.app.specular.dev",
+      "backendUrl": "https://prod-proj-8ugea6nswumynes7kkcwl-liwg5h36mq-ey.a.run.app",
       "nativelyProjectId": "d3434265-39a4-4a14-a988-80fa1687686a"
     },
     "runtimeVersion": "1.0.0",
