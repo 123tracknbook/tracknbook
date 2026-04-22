@@ -99,7 +99,7 @@
         {
           "appID": "1503230158127407",
           "clientToken": "6ad8dc9cbdee647a7906b9f311f622c9",
-          "displayName": "TracknApp",
+          "displayName": "TracknBook",
           "scheme": "fb1503230158127407",
           "advertiserIDCollectionEnabled": false,
           "autoLogAppEventsEnabled": false,
@@ -107,6 +107,7 @@
           "iosUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
         }
       ],
+      "react-native-edge-to-edge",
       "expo-apple-authentication",
       [
         "expo-notifications",
