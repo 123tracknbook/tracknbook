@@ -3,10 +3,13 @@ import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/IconSymbol";
+import { setPendingWebViewUrl } from "@/utils/webViewRef";
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const router = useRouter();
 
   const handleOpenWebsite = () => {
     console.log("User tapped Open Website button");
@@ -16,6 +19,12 @@ export default function ProfileScreen() {
   const handleSupport = () => {
     console.log("User tapped Support button");
     Linking.openURL("mailto:support@tracknbook.app");
+  };
+
+  const handleDeleteAccount = () => {
+    console.log("User tapped Delete Account button");
+    setPendingWebViewUrl("https://www.tracknbook.app/profile");
+    router.push("/(tabs)/(home)");
   };
 
   return (
@@ -74,6 +83,21 @@ export default function ProfileScreen() {
               size={20}
               color={theme.dark ? '#8E8E93' : '#C7C7CC'}
             />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: theme.dark ? '#3A1A1A' : '#FFF0F0' }]}
+            onPress={handleDeleteAccount}
+          >
+            <IconSymbol
+              ios_icon_name="trash.fill"
+              android_material_icon_name="delete"
+              size={24}
+              color="#FF3B30"
+            />
+            <Text style={[styles.buttonText, { color: '#FF3B30' }]}>
+              Delete Account
+            </Text>
           </TouchableOpacity>
         </View>
 
