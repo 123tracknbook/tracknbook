@@ -24,10 +24,8 @@ export default function PaywallScreen() {
           Object.keys(offerings.all),
           "| current:", offerings.current?.identifier ?? "null"
         );
-        // Use the current offering (the one marked as current in the RC dashboard).
-        // If your custom-template offering has a different identifier, set it here:
-        //   const target = offerings.all["your_offering_id"] ?? offerings.current;
-        const target = offerings.current;
+        // Target the "subscriptions" offering directly. Falls back to current if not found.
+        const target = offerings.all["subscriptions"] ?? offerings.current;
         if (!target) {
           console.warn("[PaywallScreen] no current offering found — paywall will use RC default");
         } else {
