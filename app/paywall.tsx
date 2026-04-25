@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from "react-native";
+import { View, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Purchases from "react-native-purchases";
@@ -93,6 +93,28 @@ export default function PaywallScreen() {
     router.back();
   };
 
+  const handleOpenTerms = () => {
+    console.log("[PaywallScreen] Terms of Service link pressed");
+    Linking.openURL("https://www.tracknbook.com/terms-and-conditions");
+  };
+
+  const handleOpenPrivacy = () => {
+    console.log("[PaywallScreen] Privacy Policy link pressed");
+    Linking.openURL("https://www.tracknbook.com/privacy-policy");
+  };
+
+  const legalLinks = (
+    <View style={styles.legalRow}>
+      <TouchableOpacity onPress={handleOpenTerms}>
+        <Text style={styles.legalLink}>Terms of Service</Text>
+      </TouchableOpacity>
+      <Text style={styles.legalSeparator}> · </Text>
+      <TouchableOpacity onPress={handleOpenPrivacy}>
+        <Text style={styles.legalLink}>Privacy Policy</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   // Wait until we've attempted to load the offering before rendering the Paywall.
   // Rendering RevenueCatUI.Paywall before RC has resolved its offerings can cause
   // it to fall back to a built-in default template instead of the dashboard one.
@@ -105,6 +127,7 @@ export default function PaywallScreen() {
         <View style={styles.loadingWrapper}>
           <ActivityIndicator size="large" color="#fff" />
         </View>
+        {legalLinks}
       </SafeAreaView>
     );
   }
@@ -127,6 +150,7 @@ export default function PaywallScreen() {
           onDismiss={handleDismiss}
         />
       </View>
+      {legalLinks}
     </SafeAreaView>
   );
 }
@@ -160,5 +184,22 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  legalRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingBottom: 16,
+  },
+  legalLink: {
+    color: "#fff",
+    fontSize: 12,
+    opacity: 0.6,
+    textDecorationLine: "underline",
+  },
+  legalSeparator: {
+    color: "#fff",
+    fontSize: 12,
+    opacity: 0.6,
   },
 });
