@@ -119,7 +119,9 @@
           "requestPermissionsOnLaunch": true
         }
       ],
-      ["react-native-purchases"],
+      [
+        "react-native-purchases"
+      ],
       [
         "expo-image-picker",
         {
@@ -141,7 +143,7 @@
       "eas": {
         "projectId": "66b1f7d9-c56e-4b54-bd69-1aca90734eae"
       },
-      "backendUrl": "https://prod-proj-8ugea6nswumynes7kkcwl-liwg5h36mq-ey.a.run.app",
+      "backendUrl": "https://x22c75gpnejzjbk2e7cztbaussb8z4ac.app.specular.dev",
       "nativelyProjectId": "d3434265-39a4-4a14-a988-80fa1687686a"
     },
     "runtimeVersion": "1.0.0",
