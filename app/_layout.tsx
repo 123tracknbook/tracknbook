@@ -1,6 +1,7 @@
 
 import "react-native-reanimated";
 import React, { useEffect, useRef, useState } from "react";
+import * as TrackingTransparency from "expo-tracking-transparency";
 import { useColorScheme } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack, Redirect, usePathname } from "expo-router";
@@ -46,6 +47,14 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+
+  // Request ATT permission on iOS 14+ before Facebook SDK collects any data.
+  // Must be the first useEffect so it fires before any other SDK initialisation.
+  useEffect(() => {
+    TrackingTransparency.requestTrackingPermissionsAsync().catch(() => {
+      // Silently ignore — ATT is iOS only, this is a no-op on Android
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check onboarding state once on mount — non-blocking: we default to true above
   // so the app renders immediately and we only redirect to onboarding if needed.

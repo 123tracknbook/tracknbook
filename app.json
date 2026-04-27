@@ -30,7 +30,7 @@
       "entitlements": {
         "com.apple.developer.associated-domains": [
           "webcredentials:tracknbook.app"
-        ],
+        ]
       },
       "bundleIdentifier": "com.tracknbook.app",
       "buildNumber": "1.0.6",
@@ -56,7 +56,8 @@
         "UIBackgroundModes": [
           "remote-notification"
         ],
-        "NSLocationWhenInUseUsageDescription": "TracknBook uses your location to show nearby services and job sites."
+        "NSLocationWhenInUseUsageDescription": "TracknBook uses your location to show nearby services and job sites.",
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
       }
     },
     "android": {
@@ -85,7 +86,7 @@
         "ACCESS_COARSE_LOCATION",
         "INTERNET",
         "com.google.android.gms.permission.AD_ID"
-      ],
+      ]
     },
     "web": {
       "favicon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
@@ -118,8 +119,7 @@
           "requestPermissionsOnLaunch": true
         }
       ],
-      [
-        "react-native-purchases",
+      ["react-native-purchases"],
       [
         "expo-image-picker",
         {
@@ -127,7 +127,8 @@
           "photosPermission": "TracknBook accesses your photo library so team members can attach existing photos to jobs, such as before-and-after work photos, site issues, or completed work.",
           "microphonePermission": "TracknBook uses the microphone when capturing video so audio can be recorded alongside job footage."
         }
-      ]
+      ],
+      "expo-tracking-transparency"
     ],
     "scheme": "tracknbook",
     "experiments": {
