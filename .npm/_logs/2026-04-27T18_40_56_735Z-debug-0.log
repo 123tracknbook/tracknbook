@@ -4,24 +4,24 @@
 3 silly config load:file:/usr/lib/node_modules/npm/npmrc
 4 silly config load:file:/expo-project/.npmrc
 5 silly config load:file:/usr/etc/npmrc
-6 verbose title npm explain expo-cli
-7 verbose argv "explain" "expo-cli" "--json"
-8 verbose logfile logs-max:10 dir:/expo-project/.npm/_logs/2026-04-27T17_54_33_084Z-
-9 verbose logfile /expo-project/.npm/_logs/2026-04-27T17_54_33_084Z-debug-0.log
+6 verbose title npm explain @unimodules/core
+7 verbose argv "explain" "@unimodules/core" "--json"
+8 verbose logfile logs-max:10 dir:/expo-project/.npm/_logs/2026-04-27T18_40_56_735Z-
+9 verbose logfile /expo-project/.npm/_logs/2026-04-27T18_40_56_735Z-debug-0.log
 10 warn Unknown env config "node-linker". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
 11 warn Unknown user config "node-linker". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
 12 silly logfile start cleaning logs, removing 3 files
 13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 14 silly logfile done cleaning log files
-15 verbose stack Error: No dependencies found matching expo-cli
+15 verbose stack Error: No dependencies found matching @unimodules/core
 15 verbose stack     at Explain.exec (/usr/lib/node_modules/npm/lib/commands/explain.js:56:13)
 15 verbose stack     at async Npm.exec (/usr/lib/node_modules/npm/lib/npm.js:209:9)
 15 verbose stack     at async module.exports (/usr/lib/node_modules/npm/lib/cli/entry.js:67:5)
-16 error No dependencies found matching expo-cli
+16 error No dependencies found matching @unimodules/core
 17 verbose cwd /expo-project
 18 verbose os Linux 4.4.0
 19 verbose node v22.22.1
 20 verbose npm  v11.11.0
 21 verbose exit 1
 22 verbose code 1
-23 error A complete log of this run can be found in: /expo-project/.npm/_logs/2026-04-27T17_54_33_084Z-debug-0.log
+23 error A complete log of this run can be found in: /expo-project/.npm/_logs/2026-04-27T18_40_56_735Z-debug-0.log

@@ -128,7 +128,10 @@
           "microphonePermission": "TracknBook uses the microphone when capturing video so audio can be recorded alongside job footage."
         }
       ],
-      "expo-tracking-transparency"
+      "expo-tracking-transparency",
+      "expo-secure-store",
+      "expo-web-browser",
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "tracknbook",
     "experiments": {
