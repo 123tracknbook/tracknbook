@@ -273,20 +273,4 @@ config.server.enhanceMiddleware = (middleware) => {
   };
 };
 
-// Stub native-only modules on web so the preview doesn't crash
-config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (platform === 'web') {
-    if (moduleName === 'expo-tracking-transparency') {
-      return { filePath: require.resolve('./mocks/expo-tracking-transparency.js'), type: 'sourceFile' };
-    }
-    if (moduleName === 'react-native-edge-to-edge') {
-      return { filePath: require.resolve('./mocks/react-native-edge-to-edge.js'), type: 'sourceFile' };
-    }
-    if (moduleName === 'react-native-fbsdk-next') {
-      return { filePath: require.resolve('./mocks/react-native-fbsdk-next.js'), type: 'sourceFile' };
-    }
-  }
-  return context.resolveRequest(context, moduleName, platform);
-};
-
 module.exports = config;
