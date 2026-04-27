@@ -87,8 +87,5 @@
     "workbox-precaching": "^7.3.0",
     "workbox-webpack-plugin": "^7.3.0"
   },
-  "resolutions": {
-    "@expo/prebuild-config": "latest"
-  },
   "private": true
 }
