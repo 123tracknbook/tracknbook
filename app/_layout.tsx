@@ -1,12 +1,9 @@
-
 import "react-native-reanimated";
 import React, { useEffect } from "react";
-import * as TrackingTransparency from "expo-tracking-transparency";
-import { useColorScheme } from "react-native";
+import { useColorScheme, Platform } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   DarkTheme,
@@ -20,10 +17,7 @@ import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
-// Note: Notifications.setNotificationHandler is already called in utils/notifications.ts
 
-// Module-level hard fallback: fires outside React's lifecycle entirely.
-// Guarantees the splash hides even if the component tree never mounts or crashes.
 setTimeout(() => {
   SplashScreen.hideAsync().catch(() => {});
 }, 5000);
@@ -32,9 +26,16 @@ export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
 
-// Safety net: if the WebView never fires onLoadEnd (e.g. network error, slow load),
-// hide the splash screen after this many milliseconds so the app never stays stuck.
 const SPLASH_SAFETY_TIMEOUT_MS = 5000;
+
+// Lazily load native-only modules so web doesn't crash
+const TrackingTransparency = Platform.OS !== 'web'
+  ? require('expo-tracking-transparency')
+  : null;
+
+const SystemBars = Platform.OS !== 'web'
+  ? require('react-native-edge-to-edge').SystemBars
+  : null;
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -42,18 +43,12 @@ export default function RootLayout() {
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  // Request ATT permission on iOS 14+ before Facebook SDK collects any data.
-  // Must be the first useEffect so it fires before any other SDK initialisation.
   useEffect(() => {
-    TrackingTransparency.requestTrackingPermissionsAsync().catch(() => {
-      // Silently ignore — ATT is iOS only, this is a no-op on Android
-    });
+    if (TrackingTransparency) {
+      TrackingTransparency.requestTrackingPermissionsAsync().catch(() => {});
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Safety timeout: hide the splash screen after SPLASH_SAFETY_TIMEOUT_MS no matter what.
-  // This is a hard fallback — the WebView's onLoadEnd (or onboarding mount) should hide it
-  // sooner. We intentionally do NOT clear this timer on unmount so it always fires even if
-  // _layout.tsx remounts or a redirect causes a brief unmount cycle.
   useEffect(() => {
     console.log('[RootLayout] mounted — starting splash safety timeout');
     const timer = setTimeout(() => {
@@ -62,14 +57,9 @@ export default function RootLayout() {
         console.warn('[RootLayout] SplashScreen.hideAsync (safety timeout) error:', e)
       );
     }, SPLASH_SAFETY_TIMEOUT_MS);
-
-    // No clearTimeout — we want this to fire even if the component unmounts before 5s.
-    // The extra hideAsync() call after it already hid is a no-op (caught by .catch).
     return undefined;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // NOTE: We intentionally do NOT block on font loading.
-  // The WebView starts loading immediately; fonts resolve in the background.
   console.log('[RootLayout] rendering — fonts loaded:', loaded);
 
   const CustomDefaultTheme: Theme = {
@@ -117,7 +107,7 @@ export default function RootLayout() {
                 <Stack.Screen name="notifications-demo" options={{ headerShown: true, title: 'Notifications Demo' }} />
                 <Stack.Screen name="+not-found" />
               </Stack>
-              <SystemBars style="light" />
+              {SystemBars ? <SystemBars style="light" /> : null}
             </GestureHandlerRootView>
           </SubscriptionProvider>
         </WidgetProvider>
