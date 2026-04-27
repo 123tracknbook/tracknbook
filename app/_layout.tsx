@@ -1,10 +1,10 @@
 
 import "react-native-reanimated";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect } from "react";
 import * as TrackingTransparency from "expo-tracking-transparency";
 import { useColorScheme } from "react-native";
 import { useFonts } from "expo-font";
-import { Stack, Redirect, usePathname } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -17,7 +17,6 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
-import { isOnboardingComplete } from "@/utils/onboardingStorage";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -38,11 +37,6 @@ export const unstable_settings = {
 const SPLASH_SAFETY_TIMEOUT_MS = 5000;
 
 export default function RootLayout() {
-  // Default to true so the app renders immediately without blocking on SecureStore.
-  // The async check below will update this if onboarding is actually incomplete.
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean>(true);
-  const onboardingCheckedRef = useRef(false);
-  const pathname = usePathname();
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
@@ -54,23 +48,6 @@ export default function RootLayout() {
     TrackingTransparency.requestTrackingPermissionsAsync().catch(() => {
       // Silently ignore — ATT is iOS only, this is a no-op on Android
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Check onboarding state once on mount — non-blocking: we default to true above
-  // so the app renders immediately and we only redirect to onboarding if needed.
-  useEffect(() => {
-    if (onboardingCheckedRef.current) return;
-    onboardingCheckedRef.current = true;
-    console.log('[RootLayout] Checking onboarding state (non-blocking)');
-    isOnboardingComplete()
-      .then((complete) => {
-        console.log('[RootLayout] Onboarding complete:', complete);
-        setOnboardingComplete(complete);
-      })
-      .catch((err) => {
-        // SecureStore failure — keep default (true) so the app doesn't hang.
-        console.warn('[RootLayout] isOnboardingComplete failed, keeping default true:', err);
-      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Safety timeout: hide the splash screen after SPLASH_SAFETY_TIMEOUT_MS no matter what.
@@ -91,9 +68,9 @@ export default function RootLayout() {
     return undefined;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // NOTE: We intentionally do NOT block on font loading or onboarding check.
-  // The WebView starts loading immediately; fonts and onboarding state resolve in the background.
-  console.log('[RootLayout] rendering — fonts loaded:', loaded, '| onboardingComplete:', onboardingComplete);
+  // NOTE: We intentionally do NOT block on font loading.
+  // The WebView starts loading immediately; fonts resolve in the background.
+  console.log('[RootLayout] rendering — fonts loaded:', loaded);
 
   const CustomDefaultTheme: Theme = {
     ...DefaultTheme,
@@ -129,15 +106,11 @@ export default function RootLayout() {
         <WidgetProvider>
           <SubscriptionProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
-              {onboardingComplete === false && pathname !== "/onboarding" && pathname !== "/auth" && pathname !== "/paywall" && pathname !== "/auth-popup" && pathname !== "/auth-callback" && <Redirect href="/onboarding" />}
-
               <Stack
                 screenOptions={{
                   headerShown: false,
                 }}
               >
-                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
                 <Stack.Screen name="camera-demo" options={{ headerShown: true, title: 'Camera Demo' }} />
