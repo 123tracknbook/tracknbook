@@ -7,6 +7,18 @@ const config = getDefaultConfig(__dirname);
 
 config.resolver.unstable_enablePackageExports = true;
 
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform === 'web') {
+    if (moduleName === 'expo-tracking-transparency') {
+      return { filePath: path.join(__dirname, 'mocks/expo-tracking-transparency.js'), type: 'sourceFile' };
+    }
+    if (moduleName === 'react-native-edge-to-edge') {
+      return { filePath: path.join(__dirname, 'mocks/react-native-edge-to-edge.js'), type: 'sourceFile' };
+    }
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 // Use turborepo to restore the cache when possible
 config.cacheStores = [
     new FileStore({ root: path.join(__dirname, 'node_modules', '.cache', 'metro') }),
