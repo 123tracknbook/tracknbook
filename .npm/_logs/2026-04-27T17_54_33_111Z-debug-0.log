@@ -6,8 +6,8 @@
 5 silly config load:file:/usr/etc/npmrc
 6 verbose title npm explain react-native-unimodules
 7 verbose argv "explain" "react-native-unimodules" "--json"
-8 verbose logfile logs-max:10 dir:/expo-project/.npm/_logs/2026-04-27T17_37_43_001Z-
-9 verbose logfile /expo-project/.npm/_logs/2026-04-27T17_37_43_001Z-debug-0.log
+8 verbose logfile logs-max:10 dir:/expo-project/.npm/_logs/2026-04-27T17_54_33_111Z-
+9 verbose logfile /expo-project/.npm/_logs/2026-04-27T17_54_33_111Z-debug-0.log
 10 warn Unknown env config "node-linker". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
 11 warn Unknown user config "node-linker". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
 12 silly logfile start cleaning logs, removing 4 files
@@ -24,4 +24,4 @@
 20 verbose npm  v11.11.0
 21 verbose exit 1
 22 verbose code 1
-23 error A complete log of this run can be found in: /expo-project/.npm/_logs/2026-04-27T17_37_43_001Z-debug-0.log
+23 error A complete log of this run can be found in: /expo-project/.npm/_logs/2026-04-27T17_54_33_111Z-debug-0.log

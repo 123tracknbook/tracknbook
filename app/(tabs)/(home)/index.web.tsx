@@ -6,6 +6,14 @@ import { useTheme } from "@react-navigation/native";
 
 const webAppUrl = "https://www.tracknbook.app";
 
+// Web-only iframe style — kept outside StyleSheet.create to allow CSS-only properties
+const iframeStyle = {
+  flex: 1,
+  width: '100%',
+  height: '100%',
+  border: 'none',
+} as React.CSSProperties;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -19,12 +27,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.9)',
-  },
-  iframe: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    border: 'none',
   },
   errorContainer: {
     flex: 1,
@@ -104,7 +106,7 @@ export default function HomeScreen() {
             )}
             <iframe
               src={webAppUrl}
-              style={styles.iframe}
+              style={iframeStyle}
               onLoad={handleLoad}
               onError={handleError}
               title="Track n Book"

@@ -47,7 +47,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     // Fire-and-forget — never block rendering
     (async () => {
       try {
-        if (Platform.OS === 'android' && RC_ANDROID_KEY === 'ANDROID_RC_KEY_PLACEHOLDER') {
+        if (Platform.OS === 'android' && (RC_ANDROID_KEY as string) === 'ANDROID_RC_KEY_PLACEHOLDER') {
           console.warn('[SubscriptionContext] Android RevenueCat key not set — skipping RC configuration');
           setIsLoading(false);
           return;
@@ -72,9 +72,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     // Listen for real-time CustomerInfo updates (e.g. after purchase)
     // Must be set up after configure() — stored here for cleanup
-    let listener: { remove: () => void } | null = null;
+    // Note: addCustomerInfoUpdateListener returns void in react-native-purchases 9.x
     try {
-      listener = Purchases.addCustomerInfoUpdateListener((info) => {
+      Purchases.addCustomerInfoUpdateListener((info) => {
         console.log(
           "[SubscriptionContext] customerInfoUpdateListener fired — entitlement active:",
           checkEntitlement(info)
@@ -86,11 +86,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
 
     return () => {
-      try {
-        listener?.remove();
-      } catch (e) {
-        console.warn("[SubscriptionContext] error removing listener:", e);
-      }
+      // No cleanup needed — listener removal not supported in this SDK version
     };
   }, []);
 
