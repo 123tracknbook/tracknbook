@@ -121,9 +121,6 @@
         }
       ],
       [
-        "react-native-purchases"
-      ],
-      [
         "expo-image-picker",
         {
           "cameraPermission": "TracknBook uses your camera so team members can take photos for jobs, such as before-and-after work photos, site issues, or completed work, and attach them to the job record.",
