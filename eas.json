@@ -19,6 +19,7 @@
     },
     "preview": {
       "channel": "preview",
+      "env": { "NODE_ENV": "production", "EAS_BUILD": "true" },
       "distribution": "internal",
       "ios": {
         "simulator": false,
@@ -33,6 +34,7 @@
     },
     "production": {
       "channel": "production",
+      "env": { "NODE_ENV": "production", "EAS_BUILD": "true" },
       "ios": {
         "simulator": false,
         "resourceClass": "medium",

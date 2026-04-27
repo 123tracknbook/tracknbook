@@ -9,7 +9,7 @@
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/iphone splash screen.png",
+      "image": "./assets/images/iphone-splash-screen.png",
       "resizeMode": "cover",
       "backgroundColor": "#0a1f2e"
     },
@@ -18,10 +18,10 @@
     ],
     "ios": {
       "splash": {
-        "image": "./assets/images/iphone splash screen.png",
+        "image": "./assets/images/iphone-splash-screen.png",
         "resizeMode": "cover",
         "backgroundColor": "#0a1f2e",
-        "tabletImage": "./assets/images/ipad splash screen.png"
+        "tabletImage": "./assets/images/ipad-splash-screen.png"
       },
       "supportsTablet": true,
       "associatedDomains": [
@@ -62,7 +62,7 @@
     },
     "android": {
       "splash": {
-        "image": "./assets/images/iphone splash screen.png",
+        "image": "./assets/images/iphone-splash-screen.png",
         "resizeMode": "cover",
         "backgroundColor": "#0a1f2e"
       },
