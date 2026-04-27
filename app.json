@@ -85,7 +85,7 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "INTERNET",
-				"READ_MEDIA_IMAGES",
+        "READ_MEDIA_IMAGES",
         "com.google.android.gms.permission.AD_ID"
       ]
     },
