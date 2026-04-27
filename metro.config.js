@@ -5,22 +5,24 @@ const fs = require('fs');
 
 const config = getDefaultConfig(__dirname);
 
-config.resolver.unstable_enablePackageExports = true;
+// Stub native-only modules for web platform
+const webStubs = {
+  'expo-tracking-transparency': path.resolve(__dirname, 'mocks/expo-tracking-transparency.js'),
+  'react-native-edge-to-edge': path.resolve(__dirname, 'mocks/react-native-edge-to-edge.js'),
+};
 
-// On web, substitute expo-tracking-transparency (iOS-only) with a no-op stub
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (platform === 'web' && moduleName === 'expo-tracking-transparency') {
-    return {
-      filePath: path.resolve(__dirname, 'mocks/expo-tracking-transparency.js'),
-      type: 'sourceFile',
-    };
+  if (platform === 'web' && webStubs[moduleName]) {
+    return { filePath: webStubs[moduleName], type: 'sourceFile' };
   }
   if (originalResolveRequest) {
     return originalResolveRequest(context, moduleName, platform);
   }
   return context.resolveRequest(context, moduleName, platform);
 };
+
+config.resolver.unstable_enablePackageExports = true;
 
 // Use turborepo to restore the cache when possible
 config.cacheStores = [
