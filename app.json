@@ -147,9 +147,7 @@
       "backendUrl": "https://x22c75gpnejzjbk2e7cztbaussb8z4ac.app.specular.dev",
       "nativelyProjectId": "d3434265-39a4-4a14-a988-80fa1687686a"
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/66b1f7d9-c56e-4b54-bd69-1aca90734eae"
     }
