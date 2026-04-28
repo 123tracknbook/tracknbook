@@ -33,7 +33,7 @@
         ]
       },
       "bundleIdentifier": "com.tracknbook.app",
-      "buildNumber": "7",
+      "buildNumber": "1.0.7",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
