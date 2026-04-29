@@ -83,7 +83,8 @@
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS",
         "INTERNET",
-        "com.google.android.gms.permission.AD_ID"
+        "com.google.android.gms.permission.AD_ID",
+        "READ_MEDIA_IMAGES"
       ],
       "softwareKeyboardLayoutMode": "pan"
     },
