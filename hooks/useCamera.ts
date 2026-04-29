@@ -100,7 +100,7 @@ export function useCamera() {
         width: asset.width,
         height: asset.height,
         type: 'image',
-        base64: asset.base64,
+        base64: asset.base64 ?? undefined,
       };
     } catch (error) {
       console.error('Error taking picture:', error);
@@ -197,7 +197,7 @@ export function useCamera() {
         width: asset.width,
         height: asset.height,
         type: 'image' as const,
-        base64: asset.base64,
+        base64: asset.base64 ?? undefined,
       }));
 
       setIsLoading(false);

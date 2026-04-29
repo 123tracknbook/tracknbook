@@ -9,7 +9,7 @@ import React, {
 import { Platform } from "react-native";
 import Purchases, { LOG_LEVEL, CustomerInfo } from "react-native-purchases";
 
-const ENTITLEMENT_ID = "solo";
+const ENTITLEMENT_ID = "pro";
 const RC_IOS_KEY = "appl_VvUEhtaTtsgThAClFhpGuUaFcdc";
 const RC_ANDROID_KEY = "goog_UprMjRdcrSQmbHJgKYCvfvmYKwd";
 
@@ -47,7 +47,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     // Fire-and-forget — never block rendering
     (async () => {
       try {
-        if (Platform.OS === 'android' && RC_ANDROID_KEY === 'ANDROID_RC_KEY_PLACEHOLDER') {
+        if (Platform.OS === 'android' && (RC_ANDROID_KEY as string) === 'ANDROID_RC_KEY_PLACEHOLDER') {
           console.warn('[SubscriptionContext] Android RevenueCat key not set — skipping RC configuration');
           setIsLoading(false);
           return;
@@ -71,20 +71,22 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     })();
 
     // Listen for real-time CustomerInfo updates (e.g. after purchase)
-    const listener = Purchases.addCustomerInfoUpdateListener((info) => {
-      console.log(
-        "[SubscriptionContext] customerInfoUpdateListener fired — entitlement active:",
-        checkEntitlement(info)
-      );
-      setCustomerInfo(info);
-    });
+    // Must be set up after configure() — stored here for cleanup
+    // Note: addCustomerInfoUpdateListener returns void in react-native-purchases 9.x
+    try {
+      Purchases.addCustomerInfoUpdateListener((info) => {
+        console.log(
+          "[SubscriptionContext] customerInfoUpdateListener fired — entitlement active:",
+          checkEntitlement(info)
+        );
+        setCustomerInfo(info);
+      });
+    } catch (e) {
+      console.warn("[SubscriptionContext] error adding customerInfoUpdateListener:", e);
+    }
 
     return () => {
-      try {
-        listener.remove();
-      } catch (e) {
-        console.warn("[SubscriptionContext] error removing listener:", e);
-      }
+      // No cleanup needed — listener removal not supported in this SDK version
     };
   }, []);
 

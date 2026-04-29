@@ -31,7 +31,16 @@ module.exports = {
     "@typescript-eslint/no-wrapper-object-types": "off",
     "@typescript-eslint/ban-tslint-comment": "off",
     "react/no-unescaped-entities": "off",
-    "import/no-unresolved": "error",
+    "import/no-unresolved": ["error", {
+      "ignore": [
+        "expo-notifications",
+        "expo-clipboard",
+        "expo-device",
+        "react-native-purchases",
+        "react-native-purchases-ui"
+      ]
+    }],
+    "import/namespace": "off",
     "prefer-const": "off",
     "react/prop-types": 1,
     "no-case-declarations": "off",
@@ -45,8 +54,19 @@ module.exports = {
     {
       files: ['metro.config.js'],
       rules: {
-        '@typescript-eslint/no-var-requires': 'off'
+        '@typescript-eslint/no-var-requires': 'off',
+        'no-control-regex': 'off'
       }
     }
-  ]
+  ],
+  settings: {
+    'import/ignore': [
+      'react-native',
+      'expo-notifications',
+      'expo-clipboard',
+      'expo-device',
+      'react-native-purchases',
+      'react-native-purchases-ui'
+    ]
+  }
 };

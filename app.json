@@ -2,7 +2,6 @@
   "expo": {
     "newArchEnabled": true,
     "name": "TracknBook",
-    "displayName": "TracknBook",
     "slug": "tracknbook",
     "owner": "tracknbook",
     "version": "1.0.3",
@@ -10,7 +9,7 @@
     "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
+      "image": "./assets/images/iphone-splash-screen.png",
       "resizeMode": "cover",
       "backgroundColor": "#0a1f2e"
     },
@@ -19,10 +18,10 @@
     ],
     "ios": {
       "splash": {
-        "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
+        "image": "./assets/images/iphone-splash-screen.png",
         "resizeMode": "cover",
         "backgroundColor": "#0a1f2e",
-        "tabletImage": "./assets/images/827413ca-ee6e-448c-8a59-452956024f9b.jpeg"
+        "tabletImage": "./assets/images/ipad-splash-screen.png"
       },
       "supportsTablet": true,
       "associatedDomains": [
@@ -31,11 +30,10 @@
       "entitlements": {
         "com.apple.developer.associated-domains": [
           "webcredentials:tracknbook.app"
-        ],
-        "aps-environment": "production"
+        ]
       },
       "bundleIdentifier": "com.tracknbook.app",
-      "buildNumber": "1.0.6",
+      "buildNumber": "1.0.7",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
@@ -57,12 +55,14 @@
         },
         "UIBackgroundModes": [
           "remote-notification"
-        ]
+        ],
+        "NSLocationWhenInUseUsageDescription": "TracknBook uses your location to show nearby services and job sites.",
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
       }
     },
     "android": {
       "splash": {
-        "image": "./assets/images/f799894e-a082-498e-8fc0-f3ed8b9b33b3.jpeg",
+        "image": "./assets/images/iphone-splash-screen.png",
         "resizeMode": "cover",
         "backgroundColor": "#0a1f2e"
       },
@@ -82,6 +82,8 @@
         "WRITE_EXTERNAL_STORAGE",
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
         "INTERNET",
         "com.google.android.gms.permission.AD_ID",
         "READ_MEDIA_IMAGES"
@@ -100,7 +102,7 @@
         {
           "appID": "1503230158127407",
           "clientToken": "6ad8dc9cbdee647a7906b9f311f622c9",
-          "displayName": "TracknApp",
+          "displayName": "TracknBook",
           "scheme": "fb1503230158127407",
           "advertiserIDCollectionEnabled": false,
           "autoLogAppEventsEnabled": false,
@@ -108,6 +110,7 @@
           "iosUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
         }
       ],
+      "react-native-edge-to-edge",
       "expo-apple-authentication",
       [
         "expo-notifications",
@@ -125,7 +128,11 @@
           "photosPermission": "TracknBook accesses your photo library so team members can attach existing photos to jobs, such as before-and-after work photos, site issues, or completed work.",
           "microphonePermission": "TracknBook uses the microphone when capturing video so audio can be recorded alongside job footage."
         }
-      ]
+      ],
+      "expo-tracking-transparency",
+      "expo-secure-store",
+      "expo-web-browser",
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "tracknbook",
     "experiments": {
@@ -138,15 +145,12 @@
       "eas": {
         "projectId": "66b1f7d9-c56e-4b54-bd69-1aca90734eae"
       },
-      "backendUrl": "https://prod-proj-8ugea6nswumynes7kkcwl-liwg5h36mq-ey.a.run.app",
+      "backendUrl": "https://x22c75gpnejzjbk2e7cztbaussb8z4ac.app.specular.dev",
       "nativelyProjectId": "d3434265-39a4-4a14-a988-80fa1687686a"
     },
     "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/66b1f7d9-c56e-4b54-bd69-1aca90734eae"
-    },
-    "notification": {
-      "icon": "./assets/images/c994c889-170f-4fe5-a60b-b4b3e4f6b18d.png"
     }
   }
 }

@@ -9,8 +9,7 @@ import { Platform } from 'react-native';
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
+      shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
     }),
@@ -132,8 +131,13 @@ export async function scheduleLocalNotification(
       ? {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: triggerSeconds,
+          repeats: false,
         }
-      : null, // null means deliver immediately
+      : {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 1,
+          repeats: false,
+        },
   });
 
   console.log('Local notification scheduled with identifier:', identifier);

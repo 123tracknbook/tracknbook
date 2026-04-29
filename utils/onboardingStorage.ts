@@ -10,7 +10,11 @@ const _PROJECT_SCOPE = Constants.expoConfig?.extra?.nativelyProjectId || Constan
 const ONBOARDING_KEY = `onboarding_complete_${_PROJECT_SCOPE}`;
 
 export async function isOnboardingComplete(): Promise<boolean> {
-  return true;
+  if (Platform.OS === "web") {
+    return localStorage.getItem(ONBOARDING_KEY) === "true";
+  }
+  const value = await SecureStore.getItemAsync(ONBOARDING_KEY);
+  return value === 'true';
 }
 
 export async function completeOnboarding(): Promise<void> {
