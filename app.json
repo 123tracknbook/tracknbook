@@ -27,6 +27,7 @@
       "associatedDomains": [
         "webcredentials:tracknbook.app"
       ],
+			
       "entitlements": {
         "com.apple.developer.associated-domains": [
           "webcredentials:tracknbook.app"
