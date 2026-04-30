@@ -57,7 +57,8 @@
           "remote-notification"
         ],
         "NSLocationWhenInUseUsageDescription": "TracknBook uses your location to show nearby services and job sites.",
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
+        "NSPhotoLibraryUsageDescription": "TracknBook accesses your photo library so team members can attach existing photos to jobs, such as before-and-after work photos, site issues, or completed work."
       }
     },
     "android": {
@@ -97,19 +98,6 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      [
-        "react-native-fbsdk-next",
-        {
-          "appID": "1503230158127407",
-          "clientToken": "6ad8dc9cbdee647a7906b9f311f622c9",
-          "displayName": "TracknBook",
-          "scheme": "fb1503230158127407",
-          "advertiserIDCollectionEnabled": false,
-          "autoLogAppEventsEnabled": false,
-          "isAutoInitEnabled": true,
-          "iosUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
-        }
-      ],
       "react-native-edge-to-edge",
       "expo-apple-authentication",
       [

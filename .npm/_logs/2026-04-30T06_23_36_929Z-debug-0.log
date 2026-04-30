@@ -1,0 +1,331 @@
+0 verbose cli /usr/bin/node /usr/bin/npm
+1 info using npm@11.11.0
+2 info using node@v22.22.1
+3 silly config load:file:/usr/lib/node_modules/npm/npmrc
+4 silly config load:file:/expo-project/.npmrc
+5 silly config load:file:/usr/etc/npmrc
+6 verbose title npm remove react-native-fbsdk-next
+7 verbose argv "remove" "react-native-fbsdk-next" "--save"
+8 verbose logfile logs-max:10 dir:/expo-project/.npm/_logs/2026-04-30T06_23_36_929Z-
+9 verbose logfile /expo-project/.npm/_logs/2026-04-30T06_23_36_929Z-debug-0.log
+10 warn Unknown user config "node-linker". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+14 silly idealTree buildDeps
+15 silly fetch manifest react@^18.0.0
+16 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+17 http fetch GET 200 https://registry.npmjs.org/react 248ms (cache miss)
+18 silly packumentCache full:https://registry.npmjs.org/react set size:undefined disposed:false
+19 silly fetch manifest react-dom@^18.0.0
+20 silly packumentCache full:https://registry.npmjs.org/react-dom cache-miss
+21 http fetch GET 200 https://registry.npmjs.org/react-dom 322ms (cache miss)
+22 silly packumentCache full:https://registry.npmjs.org/react-dom set size:undefined disposed:false
+23 warn ERESOLVE overriding peer dependency {
+23 warn ERESOLVE   code: 'ERESOLVE',
+23 warn ERESOLVE   edge: {
+23 warn ERESOLVE     type: 'peer',
+23 warn ERESOLVE     name: 'react',
+23 warn ERESOLVE     spec: '^18.0.0',
+23 warn ERESOLVE     error: 'INVALID',
+23 warn ERESOLVE     from: {
+23 warn ERESOLVE       name: '@react-leaflet/core',
+23 warn ERESOLVE       version: '2.1.0',
+23 warn ERESOLVE       location: 'node_modules/@react-leaflet/core',
+23 warn ERESOLVE       isWorkspace: false,
+23 warn ERESOLVE       dependents: [Array]
+23 warn ERESOLVE     }
+23 warn ERESOLVE   },
+23 warn ERESOLVE   dep: {
+23 warn ERESOLVE     name: 'react',
+23 warn ERESOLVE     version: '18.3.1',
+23 warn ERESOLVE     whileInstalling: {
+23 warn ERESOLVE       name: '@react-leaflet/core',
+23 warn ERESOLVE       version: '2.1.0',
+23 warn ERESOLVE       path: '/expo-project/node_modules/@react-leaflet/core'
+23 warn ERESOLVE     },
+23 warn ERESOLVE     location: 'node_modules/react',
+23 warn ERESOLVE     isWorkspace: false,
+23 warn ERESOLVE     dependents: [ [Object] ]
+23 warn ERESOLVE   },
+23 warn ERESOLVE   force: false,
+23 warn ERESOLVE   isMine: false,
+23 warn ERESOLVE   strictPeerDeps: false,
+23 warn ERESOLVE   current: {
+23 warn ERESOLVE     name: 'react',
+23 warn ERESOLVE     version: '19.1.0',
+23 warn ERESOLVE     location: 'node_modules/react',
+23 warn ERESOLVE     isWorkspace: false,
+23 warn ERESOLVE     dependents: [
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object], [Object]
+23 warn ERESOLVE     ]
+23 warn ERESOLVE   },
+23 warn ERESOLVE   peerConflict: {
+23 warn ERESOLVE     current: {
+23 warn ERESOLVE       name: 'react',
+23 warn ERESOLVE       version: '19.1.0',
+23 warn ERESOLVE       location: 'node_modules/react',
+23 warn ERESOLVE       isWorkspace: false,
+23 warn ERESOLVE       dependents: [Array]
+23 warn ERESOLVE     },
+23 warn ERESOLVE     peer: {
+23 warn ERESOLVE       name: 'react',
+23 warn ERESOLVE       version: '18.3.1',
+23 warn ERESOLVE       whileInstalling: [Object],
+23 warn ERESOLVE       location: 'node_modules/react',
+23 warn ERESOLVE       isWorkspace: false,
+23 warn ERESOLVE       dependents: [Array]
+23 warn ERESOLVE     }
+23 warn ERESOLVE   }
+23 warn ERESOLVE }
+24 warn ERESOLVE overriding peer dependency {
+24 warn ERESOLVE   code: 'ERESOLVE',
+24 warn ERESOLVE   edge: {
+24 warn ERESOLVE     type: 'peer',
+24 warn ERESOLVE     name: 'react-dom',
+24 warn ERESOLVE     spec: '^18.0.0',
+24 warn ERESOLVE     error: 'INVALID',
+24 warn ERESOLVE     from: {
+24 warn ERESOLVE       name: '@react-leaflet/core',
+24 warn ERESOLVE       version: '2.1.0',
+24 warn ERESOLVE       location: 'node_modules/@react-leaflet/core',
+24 warn ERESOLVE       isWorkspace: false,
+24 warn ERESOLVE       dependents: [Array]
+24 warn ERESOLVE     }
+24 warn ERESOLVE   },
+24 warn ERESOLVE   dep: {
+24 warn ERESOLVE     name: 'react-dom',
+24 warn ERESOLVE     version: '18.3.1',
+24 warn ERESOLVE     whileInstalling: {
+24 warn ERESOLVE       name: '@react-leaflet/core',
+24 warn ERESOLVE       version: '2.1.0',
+24 warn ERESOLVE       path: '/expo-project/node_modules/@react-leaflet/core'
+24 warn ERESOLVE     },
+24 warn ERESOLVE     location: 'node_modules/react-dom',
+24 warn ERESOLVE     isWorkspace: false,
+24 warn ERESOLVE     dependents: [ [Object] ]
+24 warn ERESOLVE   },
+24 warn ERESOLVE   force: false,
+24 warn ERESOLVE   isMine: false,
+24 warn ERESOLVE   strictPeerDeps: false,
+24 warn ERESOLVE   current: {
+24 warn ERESOLVE     name: 'react-dom',
+24 warn ERESOLVE     version: '19.1.0',
+24 warn ERESOLVE     location: 'node_modules/react-dom',
+24 warn ERESOLVE     isWorkspace: false,
+24 warn ERESOLVE     dependents: [
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object]
+24 warn ERESOLVE     ]
+24 warn ERESOLVE   },
+24 warn ERESOLVE   peerConflict: {
+24 warn ERESOLVE     current: {
+24 warn ERESOLVE       name: 'react-dom',
+24 warn ERESOLVE       version: '19.1.0',
+24 warn ERESOLVE       location: 'node_modules/react-dom',
+24 warn ERESOLVE       isWorkspace: false,
+24 warn ERESOLVE       dependents: [Array]
+24 warn ERESOLVE     },
+24 warn ERESOLVE     peer: {
+24 warn ERESOLVE       name: 'react-dom',
+24 warn ERESOLVE       version: '18.3.1',
+24 warn ERESOLVE       whileInstalling: [Object],
+24 warn ERESOLVE       location: 'node_modules/react-dom',
+24 warn ERESOLVE       isWorkspace: false,
+24 warn ERESOLVE       dependents: [Array]
+24 warn ERESOLVE     }
+24 warn ERESOLVE   }
+24 warn ERESOLVE }
+25 silly fetch manifest fsevents@~2.3.2
+26 silly packumentCache full:https://registry.npmjs.org/fsevents cache-miss
+27 http fetch GET 200 https://registry.npmjs.org/fsevents 35ms (cache miss)
+28 silly packumentCache full:https://registry.npmjs.org/fsevents set size:undefined disposed:false
+29 silly placeDep ROOT fsevents@2.3.3 OK for: chokidar@3.6.0 want: ~2.3.2
+30 silly fetch manifest eslint@^9.24.0
+31 silly packumentCache full:https://registry.npmjs.org/eslint cache-miss
+32 http fetch GET 200 https://registry.npmjs.org/eslint 91ms (cache miss)
+33 silly packumentCache full:https://registry.npmjs.org/eslint set size:undefined disposed:false
+34 silly fetch manifest jiti@*
+35 silly packumentCache full:https://registry.npmjs.org/jiti cache-miss
+36 http fetch GET 200 https://registry.npmjs.org/jiti 47ms (cache miss)
+37 silly packumentCache full:https://registry.npmjs.org/jiti set size:undefined disposed:false
+38 silly placeDep node_modules/eslint-plugin-expo eslint@9.39.4 OK for: eslint-plugin-expo@1.0.0 want: ^9.24.0
+39 silly fetch manifest ajv@^6.14.0
+40 silly packumentCache full:https://registry.npmjs.org/ajv cache-miss
+41 silly fetch manifest espree@^10.4.0
+42 silly packumentCache full:https://registry.npmjs.org/espree cache-miss
+43 silly fetch manifest find-up@^5.0.0
+44 silly packumentCache full:https://registry.npmjs.org/find-up cache-miss
+45 silly fetch manifest @eslint/core@^0.17.0
+46 silly packumentCache full:https://registry.npmjs.org/@eslint%2fcore cache-miss
+47 silly fetch manifest eslint-scope@^8.4.0
+48 silly packumentCache full:https://registry.npmjs.org/eslint-scope cache-miss
+49 silly fetch manifest @humanfs/node@^0.16.6
+50 silly packumentCache full:https://registry.npmjs.org/@humanfs%2fnode cache-miss
+51 silly fetch manifest @eslint/eslintrc@^3.3.5
+52 silly packumentCache full:https://registry.npmjs.org/@eslint%2feslintrc cache-miss
+53 silly fetch manifest file-entry-cache@^8.0.0
+54 silly packumentCache full:https://registry.npmjs.org/file-entry-cache cache-miss
+55 silly fetch manifest @eslint/plugin-kit@^0.4.1
+56 silly packumentCache full:https://registry.npmjs.org/@eslint%2fplugin-kit cache-miss
+57 silly fetch manifest eslint-visitor-keys@^4.2.1
+58 silly packumentCache full:https://registry.npmjs.org/eslint-visitor-keys cache-miss
+59 silly fetch manifest @eslint/config-array@^0.21.2
+60 silly packumentCache full:https://registry.npmjs.org/@eslint%2fconfig-array cache-miss
+61 silly fetch manifest @humanwhocodes/retry@^0.4.2
+62 silly packumentCache full:https://registry.npmjs.org/@humanwhocodes%2fretry cache-miss
+63 silly fetch manifest @eslint/config-helpers@^0.4.2
+64 silly packumentCache full:https://registry.npmjs.org/@eslint%2fconfig-helpers cache-miss
+65 http fetch GET 200 https://registry.npmjs.org/find-up 159ms (cache miss)
+66 silly packumentCache full:https://registry.npmjs.org/find-up set size:undefined disposed:false
+67 http fetch GET 200 https://registry.npmjs.org/espree 165ms (cache miss)
+68 silly packumentCache full:https://registry.npmjs.org/espree set size:undefined disposed:false
+69 http fetch GET 200 https://registry.npmjs.org/eslint-scope 168ms (cache miss)
+70 silly packumentCache full:https://registry.npmjs.org/eslint-scope set size:undefined disposed:false
+71 http fetch GET 200 https://registry.npmjs.org/@eslint%2fcore 183ms (cache miss)
+72 silly packumentCache full:https://registry.npmjs.org/@eslint%2fcore set size:undefined disposed:false
+73 http fetch GET 200 https://registry.npmjs.org/@eslint%2fconfig-helpers 173ms (cache miss)
+74 silly packumentCache full:https://registry.npmjs.org/@eslint%2fconfig-helpers set size:undefined disposed:false
+75 http fetch GET 200 https://registry.npmjs.org/@humanwhocodes%2fretry 176ms (cache miss)
+76 silly packumentCache full:https://registry.npmjs.org/@humanwhocodes%2fretry set size:undefined disposed:false
+77 http fetch GET 200 https://registry.npmjs.org/file-entry-cache 179ms (cache miss)
+78 silly packumentCache full:https://registry.npmjs.org/file-entry-cache set size:undefined disposed:false
+79 http fetch GET 200 https://registry.npmjs.org/@eslint%2fplugin-kit 180ms (cache miss)
+80 silly packumentCache full:https://registry.npmjs.org/@eslint%2fplugin-kit set size:undefined disposed:false
+81 http fetch GET 200 https://registry.npmjs.org/@eslint%2fconfig-array 182ms (cache miss)
+82 silly packumentCache full:https://registry.npmjs.org/@eslint%2fconfig-array set size:undefined disposed:false
+83 http fetch GET 200 https://registry.npmjs.org/eslint-visitor-keys 185ms (cache miss)
+84 silly packumentCache full:https://registry.npmjs.org/eslint-visitor-keys set size:undefined disposed:false
+85 http fetch GET 200 https://registry.npmjs.org/@humanfs%2fnode 203ms (cache miss)
+86 silly packumentCache full:https://registry.npmjs.org/@humanfs%2fnode set size:undefined disposed:false
+87 http fetch GET 200 https://registry.npmjs.org/@eslint%2feslintrc 194ms (cache miss)
+88 silly packumentCache full:https://registry.npmjs.org/@eslint%2feslintrc set size:undefined disposed:false
+89 http fetch GET 200 https://registry.npmjs.org/ajv 240ms (cache miss)
+90 silly packumentCache full:https://registry.npmjs.org/ajv set size:undefined disposed:false
+91 silly fetch manifest lightningcss-darwin-x64@1.32.0
+92 silly packumentCache full:https://registry.npmjs.org/lightningcss-darwin-x64 cache-miss
+93 http fetch GET 200 https://registry.npmjs.org/lightningcss-darwin-x64 33ms (cache miss)
+94 silly packumentCache full:https://registry.npmjs.org/lightningcss-darwin-x64 set size:undefined disposed:false
+95 silly fetch manifest lightningcss-win32-x64-msvc@1.32.0
+96 silly packumentCache full:https://registry.npmjs.org/lightningcss-win32-x64-msvc cache-miss
+97 http fetch GET 200 https://registry.npmjs.org/lightningcss-win32-x64-msvc 47ms (cache miss)
+98 silly packumentCache full:https://registry.npmjs.org/lightningcss-win32-x64-msvc set size:undefined disposed:false
+99 silly fetch manifest lightningcss-win32-arm64-msvc@1.32.0
+100 silly packumentCache full:https://registry.npmjs.org/lightningcss-win32-arm64-msvc cache-miss
+101 http fetch GET 200 https://registry.npmjs.org/lightningcss-win32-arm64-msvc 42ms (cache miss)
+102 silly packumentCache full:https://registry.npmjs.org/lightningcss-win32-arm64-msvc set size:undefined disposed:false
+103 silly fetch manifest lightningcss-darwin-arm64@1.32.0
+104 silly packumentCache full:https://registry.npmjs.org/lightningcss-darwin-arm64 cache-miss
+105 http fetch GET 200 https://registry.npmjs.org/lightningcss-darwin-arm64 37ms (cache miss)
+106 silly packumentCache full:https://registry.npmjs.org/lightningcss-darwin-arm64 set size:undefined disposed:false
+107 silly fetch manifest lightningcss-linux-arm64-gnu@1.32.0
+108 silly packumentCache full:https://registry.npmjs.org/lightningcss-linux-arm64-gnu cache-miss
+109 http fetch GET 200 https://registry.npmjs.org/lightningcss-linux-arm64-gnu 35ms (cache miss)
+110 silly packumentCache full:https://registry.npmjs.org/lightningcss-linux-arm64-gnu set size:undefined disposed:false
+111 silly fetch manifest lightningcss-linux-arm-gnueabihf@1.32.0
+112 silly packumentCache full:https://registry.npmjs.org/lightningcss-linux-arm-gnueabihf cache-miss
+113 http fetch GET 200 https://registry.npmjs.org/lightningcss-linux-arm-gnueabihf 45ms (cache miss)
+114 silly packumentCache full:https://registry.npmjs.org/lightningcss-linux-arm-gnueabihf set size:undefined disposed:false
+115 silly fetch manifest lightningcss-linux-arm64-musl@1.32.0
+116 silly packumentCache full:https://registry.npmjs.org/lightningcss-linux-arm64-musl cache-miss
+117 http fetch GET 200 https://registry.npmjs.org/lightningcss-linux-arm64-musl 33ms (cache miss)
+118 silly packumentCache full:https://registry.npmjs.org/lightningcss-linux-arm64-musl set size:undefined disposed:false
+119 silly fetch manifest lightningcss-linux-x64-musl@1.32.0
+120 silly packumentCache full:https://registry.npmjs.org/lightningcss-linux-x64-musl cache-miss
+121 http fetch GET 200 https://registry.npmjs.org/lightningcss-linux-x64-musl 34ms (cache miss)
+122 silly packumentCache full:https://registry.npmjs.org/lightningcss-linux-x64-musl set size:undefined disposed:false
+123 silly fetch manifest lightningcss-freebsd-x64@1.32.0
+124 silly packumentCache full:https://registry.npmjs.org/lightningcss-freebsd-x64 cache-miss
+125 http fetch GET 200 https://registry.npmjs.org/lightningcss-freebsd-x64 30ms (cache miss)
+126 silly packumentCache full:https://registry.npmjs.org/lightningcss-freebsd-x64 set size:undefined disposed:false
+127 silly fetch manifest lightningcss-android-arm64@1.32.0
+128 silly packumentCache full:https://registry.npmjs.org/lightningcss-android-arm64 cache-miss
+129 http fetch GET 200 https://registry.npmjs.org/lightningcss-android-arm64 24ms (cache miss)
+130 silly packumentCache full:https://registry.npmjs.org/lightningcss-android-arm64 set size:undefined disposed:false
+131 silly placeDep ROOT lightningcss-android-arm64@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+132 silly placeDep ROOT lightningcss-darwin-arm64@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+133 silly placeDep ROOT lightningcss-darwin-x64@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+134 silly placeDep ROOT lightningcss-freebsd-x64@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+135 silly placeDep ROOT lightningcss-linux-arm-gnueabihf@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+136 silly placeDep ROOT lightningcss-linux-arm64-gnu@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+137 silly placeDep ROOT lightningcss-linux-arm64-musl@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+138 silly placeDep ROOT lightningcss-linux-x64-musl@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+139 silly placeDep ROOT lightningcss-win32-arm64-msvc@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+140 silly placeDep ROOT lightningcss-win32-x64-msvc@1.32.0 OK for: lightningcss@1.32.0 want: 1.32.0
+141 verbose stack Error: could not resolve
+141 verbose stack     at PlaceDep.failPeerConflict (/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/place-dep.js:503:25)
+141 verbose stack     at new PlaceDep (/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/place-dep.js:157:21)
+141 verbose stack     at #buildDepStep (/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:933:18)
+141 verbose stack     at async Arborist.buildIdealTree (/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:170:7)
+141 verbose stack     at async Promise.all (index 1)
+141 verbose stack     at async Arborist.reify (/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:110:5)
+141 verbose stack     at async Uninstall.exec (/usr/lib/node_modules/npm/lib/commands/uninstall.js:49:5)
+141 verbose stack     at async Npm.exec (/usr/lib/node_modules/npm/lib/npm.js:209:9)
+141 verbose stack     at async module.exports (/usr/lib/node_modules/npm/lib/cli/entry.js:67:5)
+142 error code ERESOLVE
+143 error ERESOLVE could not resolve
+144 error
+145 error While resolving: react-leaflet@4.2.1
+145 error Found: react@19.1.0
+145 error node_modules/react
+145 error   peerOptional react@"^18.0.0 || ^19.0.0" from better-auth@1.6.9
+145 error   node_modules/better-auth
+145 error     peer better-auth@"^1.6.9" from @better-auth/expo@1.6.9
+145 error     node_modules/@better-auth/expo
+145 error       @better-auth/expo@"^1.3.34" from the root project
+145 error     better-auth@"^1.3.34" from the root project
+145 error   peer react@"*" from expo-blur@15.0.8
+145 error   node_modules/expo-blur
+145 error     expo-blur@"~15.0.8" from the root project
+145 error   72 more (expo, expo-asset, expo-clipboard, expo-glass-effect, ...)
+145 error
+145 error Could not resolve dependency:
+145 error peer react@"^18.0.0" from react-leaflet@4.2.1
+145 error node_modules/react-leaflet
+145 error   dev react-leaflet@"^4.2.1" from the root project
+145 error
+145 error Conflicting peer dependency: react@18.3.1
+145 error node_modules/react
+145 error   peer react@"^18.0.0" from react-leaflet@4.2.1
+145 error   node_modules/react-leaflet
+145 error     dev react-leaflet@"^4.2.1" from the root project
+145 error
+145 error Fix the upstream dependency conflict, or retry
+145 error this command with --force or --legacy-peer-deps
+145 error to accept an incorrect (and potentially broken) dependency resolution.
+146 error
+146 error
+146 error For a full report see:
+146 error /expo-project/.npm/_logs/2026-04-30T06_23_36_929Z-eresolve-report.txt
+147 silly unfinished npm timer reify 1777530218607
+148 silly unfinished npm timer reify:loadTrees 1777530218607
+149 silly unfinished npm timer idealTree:buildDeps 1777530221091
+150 silly unfinished npm timer idealTree:node_modules/react-leaflet 1777530222763
+151 verbose cwd /expo-project
+152 verbose os Linux 4.4.0
+153 verbose node v22.22.1
+154 verbose npm  v11.11.0
+155 verbose exit 1
+156 verbose code 1
+157 error A complete log of this run can be found in: /expo-project/.npm/_logs/2026-04-30T06_23_36_929Z-debug-0.log
