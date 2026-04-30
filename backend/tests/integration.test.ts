@@ -6,36 +6,7 @@ describe("API Integration Tests", () => {
   // let authToken: string;
   // let resourceId: string;
 
-  // TODO: Add integration tests here.
-  // Tests run sequentially within describe, so you can chain state between them.
-  //
-  // Example without auth:
-  //
-  // test("Create resource", async () => {
-  //   const res = await api("/api/resources", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ name: "Test" }),
-  //   });
-  //   await expectStatus(res, 201);
-  //   const data = await res.json();
-  //   resourceId = data.id;
-  // });
-  //
-  // Example with auth (cleanup is automatic):
-  //
-  // test("Sign up test user", async () => {
-  //   const { token, user } = await signUpTestUser();
-  //   authToken = token;
-  //   expect(authToken).toBeDefined();
-  // });
-  //
-  // test("Create authenticated resource", async () => {
-  //   const res = await authenticatedApi("/api/resources", authToken, {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ name: "Test" }),
-  //   });
-  //   await expectStatus(res, 201);
-  // });
+  // Note: The current OpenAPI spec only includes health check endpoints.
+  // Health check endpoints are excluded from integration testing per guidelines.
+  // Add tests here as new endpoints are added to the spec.
 });
